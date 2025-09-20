@@ -1,0 +1,12 @@
+Welcome to {{ site_name }}, {{ user.loginid|default:user.email }}!
+
+Thank you for registering a {{ role }} account with us. We are excited to have you on board!
+
+You can now log in using your email: {{ user.email }}
+
+Once logged in, please update your profile with more details. This is necessary for our team to review and activate your account, allowing you to access all features.
+
+If you have any questions, feel free to contact us.
+
+Best regards,
+The {{ site_name }} Team

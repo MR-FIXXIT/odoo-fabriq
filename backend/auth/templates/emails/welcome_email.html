@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to {{ site_name }}!</title>
+</head>
+<body>
+    <p>Hi {{ user.loginid|default:user.email }},</p>
+
+    <p>Welcome to <strong>{{ site_name }}</strong>!</p>
+
+    <p>Thank you for registering a {{ role }} account with us. We are excited to have you on board!</p>
+
+    <p>You can now log in using your email: <strong>{{ user.email }}</strong></p>
+
+    <p>Once you've logged in, please take a moment to **update your profile with more details**. Our team needs this information to review and activate your account, which will grant you full access to all the opportunities available.</p>
+
+    <p>If you have any questions, feel free to contact us.</p>
+
+    <p>Best regards,<br>
+    The {{ site_name }} Team</p>
+</body>
+</html>
