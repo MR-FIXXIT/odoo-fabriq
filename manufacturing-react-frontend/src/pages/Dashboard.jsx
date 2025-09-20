@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { styles } from "../DashboardStyles";
 import ManufacturingOrderPage from "./ManufacturingOrderPage";
 
-// Sidebar style objects
 const sidebarStyles = {
   sidebar: {
     position: "fixed",
@@ -18,9 +17,7 @@ const sidebarStyles = {
     transform: "translateX(0)",
     transition: "transform 0.25s",
   },
-  sidebarClosed: {
-    transform: "translateX(-100%)",
-  },
+  sidebarClosed: { transform: "translateX(-100%)" },
   sidebarOverlay: {
     position: "fixed",
     top: 0,
@@ -39,12 +36,7 @@ const sidebarStyles = {
     alignItems: "center",
     justifyContent: "space-between",
   },
-  sidebarList: {
-    listStyle: "none",
-    padding: 0,
-    margin: 0,
-    marginTop: 12,
-  },
+  sidebarList: { listStyle: "none", padding: 0, margin: 0, marginTop: 12 },
   sidebarItem: {
     display: "block",
     background: "none",
@@ -59,25 +51,14 @@ const sidebarStyles = {
     borderRadius: 4,
     transition: "background 0.11s",
   },
-  sidebarItemActive: {
-    background: "#f0f6ff",
-    fontWeight: 600,
-    color: "#1976d2",
-  },
-  sidebarClose: {
-    fontSize: 22,
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "2px 8px",
-  },
+  sidebarItemActive: { background: "#f0f6ff", fontWeight: 600, color: "#1976d2" },
+  sidebarClose: { fontSize: 22, background: "none", border: "none", cursor: "pointer", padding: "2px 8px" },
 };
 
-// Sidebar menu
+// Sidebar menu (Work Orders removed)
 const menuItems = [
   { key: "dashboard", label: "Dashboard" },
   { key: "mo", label: "Manufacturing Orders" },
-  { key: "workorders", label: "Work Orders" },
   { key: "boms", label: "Bills of Materials" },
   { key: "stockledger", label: "Stock Ledger" },
 ];
@@ -85,18 +66,28 @@ const menuItems = [
 export default function DashboardPage() {
   const [view, setView] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef();
 
   const [orders, setOrders] = useState([]);
   const [workCenters, setWorkCenters] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [newCenter, setNewCenter] = useState({ name: "", costPerHour: "" });
 
-  // Load saved data
+  // Load data
   useEffect(() => {
-    const storedOrders = JSON.parse(localStorage.getItem("orders")) || [];
-    setOrders(storedOrders);
-    const storedCenters = JSON.parse(localStorage.getItem("workCenters")) || [];
-    setWorkCenters(storedCenters);
+    setOrders(JSON.parse(localStorage.getItem("orders")) || []);
+    setWorkCenters(JSON.parse(localStorage.getItem("workCenters")) || []);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const saveOrders = (updated) => {
@@ -109,59 +100,37 @@ export default function DashboardPage() {
     localStorage.setItem("workCenters", JSON.stringify(updated));
   };
 
-  // Work Center
   const addWorkCenter = () => {
-    if (!newCenter.name || !newCenter.costPerHour)
-      return alert("Enter all fields");
+    if (!newCenter.name || !newCenter.costPerHour) return alert("Enter all fields");
     const updated = [...workCenters, { ...newCenter }];
     saveWorkCenters(updated);
     setNewCenter({ name: "", costPerHour: "" });
   };
+
   const deleteWorkCenter = (index) => {
     const updated = [...workCenters];
     updated.splice(index, 1);
     saveWorkCenters(updated);
   };
+
   const filteredCenters = workCenters.filter((wc) =>
     wc.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // View handling
   if (view === "mo") {
-    return (
-      <ManufacturingOrderPage
-        onBack={() => setView("dashboard")}
-        orders={orders}
-        saveOrders={saveOrders}
-      />
-    );
+    return <ManufacturingOrderPage onBack={() => setView("dashboard")} orders={orders} saveOrders={saveOrders} />;
   }
 
-  // --- Main dashboard view ---
   return (
     <div style={styles.pageContainer}>
       {/* Sidebar Overlay */}
-      {sidebarOpen && (
-        <div
-          style={sidebarStyles.sidebarOverlay}
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {sidebarOpen && <div style={sidebarStyles.sidebarOverlay} onClick={() => setSidebarOpen(false)} />}
 
       {/* Sidebar Drawer */}
-      <nav
-        style={{
-          ...sidebarStyles.sidebar,
-          ...(sidebarOpen ? {} : sidebarStyles.sidebarClosed),
-        }}
-      >
+      <nav style={{ ...sidebarStyles.sidebar, ...(sidebarOpen ? {} : sidebarStyles.sidebarClosed) }}>
         <div style={sidebarStyles.menuHeader}>
           Master Menu
-          <button
-            style={sidebarStyles.sidebarClose}
-            aria-label="Close"
-            onClick={() => setSidebarOpen(false)}
-          >
+          <button style={sidebarStyles.sidebarClose} aria-label="Close" onClick={() => setSidebarOpen(false)}>
             ×
           </button>
         </div>
@@ -169,10 +138,7 @@ export default function DashboardPage() {
           {menuItems.map((menu) => (
             <li key={menu.key}>
               <button
-                style={{
-                  ...sidebarStyles.sidebarItem,
-                  ...(view === menu.key ? sidebarStyles.sidebarItemActive : {}),
-                }}
+                style={{ ...sidebarStyles.sidebarItem, ...(view === menu.key ? sidebarStyles.sidebarItemActive : {}) }}
                 onClick={() => {
                   setSidebarOpen(false);
                   setView(menu.key);
@@ -187,12 +153,8 @@ export default function DashboardPage() {
 
       {/* Header */}
       <header style={headerStyles}>
-        <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center" }}>
-          <button
-            style={burgerButton}
-            aria-label="Open main menu"
-            onClick={() => setSidebarOpen(true)}
-          >
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <button style={burgerButton} aria-label="Open menu" onClick={() => setSidebarOpen(true)}>
             ☰
           </button>
         </div>
@@ -200,22 +162,40 @@ export default function DashboardPage() {
           <img src="src/components/Logo.png" alt="Logo" style={{ height: 40, marginRight: 12 }} />
           <span style={appTitle}>Fabriq</span>
         </div>
-        <div style={headerRight}>
-          <span style={userChip}>User</span>
+        <div style={headerRight} ref={profileRef}>
+          <button
+            onClick={() => setProfileOpen(!profileOpen)}
+            style={{ border: "none", background: "none", cursor: "pointer", borderRadius: "50%", width: 44, height: 44 }}
+          >
+            <img src="/user-avatar.png" alt="User" style={{ width: 44, height: 44, borderRadius: "50%", background: "#f0f3fa" }} />
+          </button>
+
+          {/* Profile Drawer */}
+          {profileOpen && (
+            <div style={profileDrawer}>
+              <div style={profileHeader}>
+                Profile
+                <button onClick={() => setProfileOpen(false)} style={profileClose}>
+                  ×
+                </button>
+              </div>
+              <button style={profileButton} onClick={() => alert("My Profile clicked")}>
+                My Profile
+              </button>
+              <button style={profileButton} onClick={() => alert("My Reports clicked")}>
+                My Reports
+              </button>
+              <button style={profileButton} onClick={() => alert("Logged Out")}>
+                Log Out
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* Nav Bar */}
-      <nav style={styles.dashboardNavBar}>
-        <button style={styles.newButton} onClick={() => setView("mo")}>
-          New Manufacturing Order
-        </button>
-        <span style={styles.navTitle}>Dashboard</span>
-      </nav>
-
-      {/* Orders Table */}
-      <div style={styles.tableContainer}>
-        <h3>Manufacturing Orders</h3>
+      {/* Dashboard Content */}
+      <main style={{ padding: 24 }}>
+        <h2>Manufacturing Orders</h2>
         <table style={styles.table}>
           <thead>
             <tr>
@@ -229,8 +209,8 @@ export default function DashboardPage() {
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ textAlign: "center", padding: "15px" }}>
-                  No orders available.
+                <td colSpan={5} style={{ textAlign: "center", padding: 12 }}>
+                  No orders available
                 </td>
               </tr>
             ) : (
@@ -246,11 +226,8 @@ export default function DashboardPage() {
             )}
           </tbody>
         </table>
-      </div>
 
-      {/* Work Center Section */}
-      <div style={{ marginTop: 40 }}>
-        <h3>Work Centers</h3>
+        <h2 style={{ marginTop: 40 }}>Work Centers</h2>
         <div style={{ marginBottom: 12 }}>
           <input
             type="text"
@@ -270,9 +247,7 @@ export default function DashboardPage() {
             type="number"
             placeholder="Cost per hour"
             value={newCenter.costPerHour}
-            onChange={(e) =>
-              setNewCenter({ ...newCenter, costPerHour: e.target.value })
-            }
+            onChange={(e) => setNewCenter({ ...newCenter, costPerHour: e.target.value })}
             style={{ padding: 8, marginRight: 8 }}
           />
           <button style={styles.newButton} onClick={addWorkCenter}>
@@ -291,7 +266,7 @@ export default function DashboardPage() {
             {filteredCenters.length === 0 ? (
               <tr>
                 <td colSpan={3} style={{ textAlign: "center", padding: 12 }}>
-                  No work centers found.
+                  No work centers found
                 </td>
               </tr>
             ) : (
@@ -300,10 +275,7 @@ export default function DashboardPage() {
                   <td style={styles.td}>{wc.name}</td>
                   <td style={styles.td}>{wc.costPerHour}</td>
                   <td style={styles.td}>
-                    <button
-                      onClick={() => deleteWorkCenter(idx)}
-                      style={{ color: "red", cursor: "pointer" }}
-                    >
+                    <button onClick={() => deleteWorkCenter(idx)} style={{ color: "red", cursor: "pointer" }}>
                       Delete
                     </button>
                   </td>
@@ -312,7 +284,7 @@ export default function DashboardPage() {
             )}
           </tbody>
         </table>
-      </div>
+      </main>
     </div>
   );
 }
@@ -331,39 +303,25 @@ const headerStyles = {
   top: 0,
   zIndex: 1500,
 };
-const burgerButton = {
-  background: "none",
-  border: "none",
-  fontSize: 26,
-  marginRight: 16,
-  cursor: "pointer",
-  color: "#34495e",
-  padding: "4px 8px",
-  borderRadius: 6,
-};
-const headerCenter = {
-  flex: "1 1 auto",
+const burgerButton = { background: "none", border: "none", fontSize: 26, marginRight: 16, cursor: "pointer", color: "#34495e", padding: "4px 8px", borderRadius: 6 };
+const headerCenter = { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center" };
+const appTitle = { fontWeight: 700, fontSize: 22, color: "#183153", letterSpacing: 0.5 };
+const headerRight = { flex: "0 0 auto", display: "flex", alignItems: "center", position: "relative" };
+
+// --- Profile drawer styles ---
+const profileDrawer = {
+  position: "absolute",
+  top: 56,
+  right: 0,
+  width: 240,
+  background: "#fff",
+  boxShadow: "0 4px 32px rgba(30,48,110,0.12)",
+  border: "1.5px solid #e8eaf1",
+  borderRadius: 12,
+  zIndex: 1500,
   display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
+  flexDirection: "column",
 };
-const appTitle = {
-  fontWeight: 700,
-  fontSize: 22,
-  color: "#183153",
-  letterSpacing: 0.5,
-};
-const headerRight = {
-  flex: "0 0 auto",
-  display: "flex",
-  alignItems: "center",
-};
-const userChip = {
-  marginLeft: 10,
-  fontSize: 16,
-  fontWeight: 500,
-  color: "#34495e",
-  borderRadius: 20,
-  background: "#f2f5fa",
-  padding: "8px 18px",
-};
+const profileHeader = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #f0f1f3", fontWeight: 700, fontSize: 18 };
+const profileClose = { background: "none", border: "none", fontSize: 22, cursor: "pointer" };
+const profileButton = { background: "none", border: "none", width: "100%", textAlign: "left", padding: "18px 16px", fontSize: 16, cursor: "pointer", borderBottom: "1px solid #f0f1f8" };
