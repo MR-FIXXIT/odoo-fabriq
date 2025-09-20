@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { styles } from "../DashboardStyles"; 
+import { styles } from "../DashboardStyles";
 import ManufacturingOrderPage from "./ManufacturingOrderPage";
 
 // Sidebar style objects
@@ -79,7 +79,6 @@ const menuItems = [
   { key: "mo", label: "Manufacturing Orders" },
   { key: "workorders", label: "Work Orders" },
   { key: "boms", label: "Bills of Materials" },
-  { key: "workcenter", label: "Work Center" },
   { key: "stockledger", label: "Stock Ledger" },
 ];
 
@@ -135,35 +134,6 @@ export default function DashboardPage() {
         orders={orders}
         saveOrders={saveOrders}
       />
-    );
-  }
-
-  if (view === "workcenter") {
-    return (
-      <div style={styles.pageContainer}>
-        <header style={headerStyles}>
-          {/* Left: Burger */}
-          <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center" }}>
-            <button
-              style={burgerButton}
-              aria-label="Open main menu"
-              onClick={() => setSidebarOpen(true)}
-            >
-              ☰
-            </button>
-          </div>
-          {/* Center */}
-          <div style={headerCenter}>
-            <img src="src/components/Logo.png" alt="Logo" style={{ height: 40, marginRight: 12 }} />
-            <span style={appTitle}>Fabriq</span>
-          </div>
-          {/* Right */}
-          <div style={headerRight}>
-            <span style={userChip}>User</span>
-          </div>
-        </header>
-        {/* ... rest of Work Center view ... */}
-      </div>
     );
   }
 
@@ -240,21 +210,17 @@ export default function DashboardPage() {
         <button style={styles.newButton} onClick={() => setView("mo")}>
           New Manufacturing Order
         </button>
-        <button style={styles.newButton} onClick={() => setView("workcenter")}>
-          Work Center
-        </button>
         <span style={styles.navTitle}>Dashboard</span>
       </nav>
 
       {/* Orders Table */}
       <div style={styles.tableContainer}>
+        <h3>Manufacturing Orders</h3>
         <table style={styles.table}>
           <thead>
             <tr>
               <th style={styles.th}>Reference</th>
-              <th style={styles.th}>Start Date</th>
               <th style={styles.th}>Finished Product</th>
-              <th style={styles.th}>Component Status</th>
               <th style={styles.th}>Quantity</th>
               <th style={styles.th}>Unit</th>
               <th style={styles.th}>State</th>
@@ -263,20 +229,84 @@ export default function DashboardPage() {
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", padding: "15px" }}>
+                <td colSpan={5} style={{ textAlign: "center", padding: "15px" }}>
                   No orders available.
                 </td>
               </tr>
             ) : (
               orders.map((order, idx) => (
                 <tr key={idx}>
-                  <td style={styles.td}>{order.reference}</td>
-                  <td style={styles.td}>{order.startDate || "-"}</td>
-                  <td style={styles.td}>{order.finishedProduct}</td>
-                  <td style={styles.td}>{order.componentStatus || "-"}</td>
-                  <td style={styles.td}>{order.quantity}</td>
-                  <td style={styles.td}>{order.unit}</td>
-                  <td style={styles.td}>{order.state}</td>
+                  <td style={styles.td}>{order.reference || "-"}</td>
+                  <td style={styles.td}>{order.finishedProduct || "-"}</td>
+                  <td style={styles.td}>{order.quantity || "-"}</td>
+                  <td style={styles.td}>{order.unit || "-"}</td>
+                  <td style={styles.td}>{order.state || "-"}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Work Center Section */}
+      <div style={{ marginTop: 40 }}>
+        <h3>Work Centers</h3>
+        <div style={{ marginBottom: 12 }}>
+          <input
+            type="text"
+            placeholder="Search work centers"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ padding: 8, marginRight: 8 }}
+          />
+          <input
+            type="text"
+            placeholder="Center name"
+            value={newCenter.name}
+            onChange={(e) => setNewCenter({ ...newCenter, name: e.target.value })}
+            style={{ padding: 8, marginRight: 8 }}
+          />
+          <input
+            type="number"
+            placeholder="Cost per hour"
+            value={newCenter.costPerHour}
+            onChange={(e) =>
+              setNewCenter({ ...newCenter, costPerHour: e.target.value })
+            }
+            style={{ padding: 8, marginRight: 8 }}
+          />
+          <button style={styles.newButton} onClick={addWorkCenter}>
+            Add
+          </button>
+        </div>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>Name</th>
+              <th style={styles.th}>Cost per Hour</th>
+              <th style={styles.th}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredCenters.length === 0 ? (
+              <tr>
+                <td colSpan={3} style={{ textAlign: "center", padding: 12 }}>
+                  No work centers found.
+                </td>
+              </tr>
+            ) : (
+              filteredCenters.map((wc, idx) => (
+                <tr key={idx}>
+                  <td style={styles.td}>{wc.name}</td>
+                  <td style={styles.td}>{wc.costPerHour}</td>
+                  <td style={styles.td}>
+                    <button
+                      onClick={() => deleteWorkCenter(idx)}
+                      style={{ color: "red", cursor: "pointer" }}
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
