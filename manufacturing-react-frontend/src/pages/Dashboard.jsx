@@ -16,7 +16,6 @@ const sidebarStyles = {
   sidebarClose: { fontSize: 22, background: "none", border: "none", cursor: "pointer", padding: "2px 8px" },
 };
 
-// Menu items: Removed Manufacturing Orders
 const menuItems = [
   { key: "dashboard", label: "Dashboard" },
   { key: "boms", label: "Bills of Materials" },
@@ -42,19 +41,16 @@ export default function DashboardPage() {
   const [newCenter, setNewCenter] = useState({ name: "", costPerHour: "" });
 
   useEffect(() => {
-    // Load stored data
     const storedOrders = JSON.parse(localStorage.getItem("orders")) || [];
     setOrders(storedOrders);
     const storedCenters = JSON.parse(localStorage.getItem("workCenters")) || [];
     setWorkCenters(storedCenters);
 
-    // Close profile if clicked outside
     const handleClick = (e) => { if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false); };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Save functions
   const saveOrders = (updated) => { setOrders(updated); localStorage.setItem("orders", JSON.stringify(updated)); };
   const saveWorkCenters = (updated) => { setWorkCenters(updated); localStorage.setItem("workCenters", JSON.stringify(updated)); };
 
@@ -87,7 +83,6 @@ export default function DashboardPage() {
     navigate("/login");
   };
 
-  // View Routing
   if (view === "boms") return <BillsOfMaterialsPage onBack={() => setView("dashboard")} />;
   if (view === "stockledger") return <StockLedgerPage onBack={() => setView("dashboard")} />;
 
@@ -123,15 +118,13 @@ export default function DashboardPage() {
         </div>
         <div style={headerRight} ref={profileRef}>
           <button onClick={() => setProfileOpen((v) => !v)} style={{ border: "none", background: "none", cursor: "pointer" }}>
-            <span style={userChip}>User</span>
+            <img src="src/components/Logo1.png" alt="User" style={{ width: 40, height: 40, borderRadius: "50%" }} />
           </button>
           {profileOpen && (
             <div style={profileSidebarStyles.sidebar}>
               <button style={profileSidebarStyles.closeBtn} onClick={() => setProfileOpen(false)}>×</button>
               <ul style={profileSidebarStyles.list}>
-                <li style={profileSidebarStyles.item}>My Profile</li>
-                <li style={profileSidebarStyles.item}>My Reports</li>
-                <li style={{ ...profileSidebarStyles.item, color: "red", cursor: "pointer" }} onClick={handleLogout}>Logout</li>
+                <li style={profileSidebarStyles.item} onClick={handleLogout}>Logout</li>
               </ul>
             </div>
           )}
@@ -238,5 +231,9 @@ const burgerButton = { background: "none", border: "none", fontSize: 26, marginR
 const headerCenter = { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center" };
 const appTitle = { fontWeight: 700, fontSize: 22, color: "#183153", letterSpacing: 0.5 };
 const headerRight = { flex: "0 0 auto", display: "flex", alignItems: "center", position: "relative" };
-const userChip = { marginLeft: 10, fontSize: 16, fontWeight: 500, color: "#34495e", borderRadius: 20, background: "#f2f5fa", padding: "8px 18px" };
-const profileSidebarStyles = { sidebar: { position: "absolute", right: 0, top: 50, width: 200, background: "#fff", border: "1px solid #eaeaea", borderRadius: 8, padding: 12, zIndex: 1600, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }, closeBtn: { position: "absolute", top: 4, right: 6, background: "none", border: "none", fontSize: 18, cursor: "pointer" }, list: { listStyle: "none", padding: 0, margin: 0 }, item: { padding: "10px 6px", cursor: "pointer", borderRadius: 4, transition: "background 0.15s", marginBottom: 4, background: "#f7f8fa" } };
+const profileSidebarStyles = { 
+  sidebar: { position: "absolute", right: 0, top: 50, width: 120, background: "#fff", border: "1px solid #eaeaea", borderRadius: 8, padding: 8, zIndex: 1600, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }, 
+  closeBtn: { position: "absolute", top: 4, right: 6, background: "none", border: "none", fontSize: 18, cursor: "pointer" }, 
+  list: { listStyle: "none", padding: 0, margin: 0 }, 
+  item: { padding: "8px 6px", cursor: "pointer", borderRadius: 4, transition: "background 0.15s", textAlign: "center", color: "red", background: "#f7f8fa" } 
+};
