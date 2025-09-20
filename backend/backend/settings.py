@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^p-y&e^hd&^iko!bvo*3z0$okp0jnd)pufu_)$yy4u6zo@q93-'
+SECRET_KEY = "django-insecure-^p-y&e^hd&^iko!bvo*3z0$okp0jnd)pufu_)$yy4u6zo@q93-"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -32,63 +32,64 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
-    'account',
-    'inventory',
-    'manufacturing',
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "corsheaders",
+    "account",
+    "inventory",
+    "manufacturing",
+    "django_filters",  # <-- add this
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = 'backend.urls'
+ROOT_URLCONF = "backend.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION = 'backend.wsgi.application'
+WSGI_APPLICATION = "backend.wsgi.application"
 
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'testodoo',
-        'USER': 'postgres',
-        'PASSWORD': 'admin',
-        'HOST': 'localhost',
-        'PORT': '5432',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": "testodoo",
+        "USER": "postgres",
+        "PASSWORD": "admin",
+        "HOST": "localhost",
+        "PORT": "5432",
     }
 }
 
@@ -98,16 +99,16 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
 
@@ -115,9 +116,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = "en-us"
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = "UTC"
 
 USE_I18N = True
 
@@ -127,57 +128,66 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'testrun120021@gmail.com'
-EMAIL_HOST_PASSWORD = 'evre hzgv tbnh smaa'
-DEFAULT_FROM_EMAIL = 'testrun120021@gmail.com'
+EMAIL_HOST_USER = "testrun120021@gmail.com"
+EMAIL_HOST_PASSWORD = "evre hzgv tbnh smaa"
+DEFAULT_FROM_EMAIL = "testrun120021@gmail.com"
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 SITE_NAME = "Fabriq"
 
-AUTH_USER_MODEL = 'account.CustomUser'
+AUTH_USER_MODEL = "account.CustomUser"
 
 # Custom User Model
 RESET_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'Login.authentication.CustomCookieJWTAuthentication',
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "Login.authentication.CustomCookieJWTAuthentication",
     ),
 }
 
 
-#--- JWT Configuration ---  
+# --- JWT Configuration ---
 SIMPLE_JWT = {
-    'USER_ID_FIELD': 'loginid',
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'AuTH_HEADER_TYPES': ('Bearer',),
-    'AuTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-
+    "USER_ID_FIELD": "loginid",
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AuTH_HEADER_TYPES": ("Bearer",),
+    "AuTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
     # --- Consolidated Cookie Settings ---
-    'AUTH_COOKIE': 'access_token',  # Name of the cookie for the access token
-    'AUTH_COOKIE_REFRESH': 'refresh_token', # Name of the cookie for the refresh token
-    'AUTH_COOKIE_DOMAIN': None, # Set to your domain (e.g., 'yourdomain.com') or None for current domain
-    'AUTH_COOKIE_SECURE': True, # Set to True in production for HTTPS
-    'AUTH_COOKIE_HTTP_ONLY': False, # Should always be True for security
-    'AUTH_COOKIE_SAMESITE': 'Lax', # Strict, Lax, or None. Lax is a good default. 'None' requires secure=True
-    'AUTH_COOKIE_PATH': '/', # Path for the cookie
+    "AUTH_COOKIE": "access_token",  # Name of the cookie for the access token
+    "AUTH_COOKIE_REFRESH": "refresh_token",  # Name of the cookie for the refresh token
+    "AUTH_COOKIE_DOMAIN": None,  # Set to your domain (e.g., 'yourdomain.com') or None for current domain
+    "AUTH_COOKIE_SECURE": True,  # Set to True in production for HTTPS
+    "AUTH_COOKIE_HTTP_ONLY": False,  # Should always be True for security
+    "AUTH_COOKIE_SAMESITE": "Lax",  # Strict, Lax, or None. Lax is a good default. 'None' requires secure=True
+    "AUTH_COOKIE_PATH": "/",  # Path for the cookie
 }
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
+    "http://localhost:3000",
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ),
+}
