@@ -24,8 +24,7 @@ export default function App() {
 
 // Protected wrapper
 function ProtectedApp() {
-  const { user } = useAuth();
-
+  const { user, authLoading } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
 
   return <Dashboard />;

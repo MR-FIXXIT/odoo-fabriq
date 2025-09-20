@@ -1,25 +1,71 @@
 import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useAuth } from "../../contexts/AuthContext";
+import api from "../../lib/api";
+import Logo from "../../components/Logo.png";
+import NameImage from "../../components/nameimage.jpeg";
 
 export default function SignupPage() {
   const navigate = useNavigate();
-  const { signup } = useAuth();
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors },
+    setError,
   } = useForm();
+  const [serverError, setServerError] = React.useState("");
 
-  const onSubmit = (data) => {
-    const success = signup(data.loginId, data.email, data.password);
-    if (success) {
+  const onSubmit = async (data) => {
+    setServerError("");
+    try {
+      // Map to API payload shape
+      const payload = {
+        loginid: data.loginId,
+        email: data.email,
+        password: data.password,
+        password2: data.confirmPassword,
+        role: "owner",
+      };
+      const res = await api.post("/account/register/", payload, { withCredentials: false });
+      console.log("Signup API success:", { status: res.status, body: res?.data });
       alert("Signup successful!");
       navigate("/login");
-    } else {
-      alert("Signup failed. User may already exist.");
+    } catch (err) {
+      const status = err?.response?.status;
+      const respData = err?.response?.data;
+      console.error("Signup API error:", { status, data: respData, message: err?.message });
+
+      let msg = "Signup failed. Please try again.";
+      if (typeof respData === "string") {
+        msg = respData;
+      } else if (respData) {
+        if (respData.message) msg = respData.message;
+        else if (respData.detail) msg = respData.detail;
+        else if (typeof respData === "object") {
+          const keys = Object.keys(respData);
+          if (keys.length) {
+            // Set field-specific errors when possible
+            keys.forEach((k) => {
+              const formKey = k === 'loginid' ? 'loginId' : (k === 'password2' ? 'confirmPassword' : k);
+              const val = respData[k];
+              const fieldMsg = Array.isArray(val) ? String(val[0]) : (typeof val === 'string' ? val : JSON.stringify(val));
+              if (['loginId','email','password','confirmPassword'].includes(formKey)) {
+                setError(formKey, { type: 'server', message: fieldMsg });
+              }
+            });
+            const first = respData[keys[0]];
+            if (Array.isArray(first) && first.length) msg = String(first[0]);
+            else if (typeof first === "string") msg = first;
+            else msg = JSON.stringify(respData);
+          }
+        }
+      } else if (err?.message) {
+        msg = err.message;
+      }
+      setServerError(msg);
+      // Keep the alert for visibility, but the form now shows inline errors too
+      alert(msg);
     }
   };
 
@@ -47,10 +93,22 @@ export default function SignupPage() {
       onMouseLeave={e => e.currentTarget.style.boxShadow = "0 2px 6px rgba(0,0,0,0.06)"}
       >
         <div style={{textAlign: "center", marginBottom: 32}}>
-        <img src="src\components\Logo.png" alt="App Logo" style={{height: 64, width: 64}} />
-        <img src="src\components\nameimage.jpeg" alt="App Logo" style={{height: 32, width: 128, marginTop: 8}} />
-
-      </div>
+          <img src={Logo} alt="App Logo" style={{height: 64, width: 64}} />
+          <img src={NameImage} alt="App Name" style={{height: 32, width: 128, marginTop: 8}} />
+        </div>
+        {serverError && (
+          <div style={{
+            background: '#FEE2E2',
+            color: '#991B1B',
+            border: '1px solid #FCA5A5',
+            padding: '8px 12px',
+            borderRadius: 8,
+            marginBottom: 12,
+            fontSize: 13,
+          }}>
+            {serverError}
+          </div>
+        )}
         <form onSubmit={handleSubmit(onSubmit)} style={{display: "flex", flexDirection: "column", gap: 16}}>
           <input
             type="text"
