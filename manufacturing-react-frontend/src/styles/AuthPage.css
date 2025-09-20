@@ -1,0 +1,126 @@
+/* Container */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa; /* light gray */
+  padding: 20px;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+/* Logo Section */
+.auth-logo {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.auth-logo img {
+  height: 80px;
+  width: 80px;
+}
+
+.auth-logo h1 {
+  font-size: 28px;
+  color: #333;
+  margin-top: 10px;
+}
+
+/* Cards Container */
+.auth-cards {
+  display: flex;
+  gap: 40px;
+  width: 100%;
+  max-width: 1000px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Individual Card */
+.auth-card {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 30px;
+  flex: 1;
+  min-width: 320px;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card Header */
+.auth-card h2 {
+  font-size: 22px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+/* Form Fields */
+.auth-card input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.auth-card input:focus {
+  border-color: #3b82f6; /* blue accent */
+  box-shadow: 0 0 0 2px rgba(59,130,246,0.2);
+}
+
+/* Buttons */
+.auth-card button {
+  padding: 12px 15px;
+  font-size: 16px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  margin-top: 5px;
+  transition: all 0.2s ease;
+}
+
+.login-btn {
+  background-color: #3b82f6;
+}
+
+.login-btn:hover {
+  background-color: #2563eb;
+}
+
+.signup-btn {
+  background-color: #10b981;
+}
+
+.signup-btn:hover {
+  background-color: #059669;
+}
+
+/* Helper links */
+.auth-links {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+}
+
+.auth-links button {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  margin: 0 5px;
+  font-size: 13px;
+}
+
+.auth-error {
+  color: #dc2626;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
