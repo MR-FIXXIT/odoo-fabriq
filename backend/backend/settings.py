@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     "account",
     "inventory",
     "manufacturing",
-    "django_filters",  # <-- add this
+    "django_filters", 
+    "analytics"
 ]
 
 MIDDLEWARE = [
