@@ -81,8 +81,8 @@ def send_password_reset_success_email(user):
     }
     
     subject = 'Password Reset Successful'
-    text_content = render_to_string('emails/password_reset_success.txt', context)
-    html_content = render_to_string('emails/password_reset_success.html', context)
+    text_content = render_to_string('emails/password_reset_email.txt', context)
+    html_content = render_to_string('emails/password_reset_email.html', context)
     
     msg = EmailMultiAlternatives(
         subject,

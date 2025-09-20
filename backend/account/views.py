@@ -11,7 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 import random
 from datetime import timedelta
 from .models import CustomUser, OTP
-from .email import send_templated_email
+from .email import send_templated_email,send_password_reset_success_email
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = s.CustomTokenObtainPairSerializer
@@ -212,7 +212,7 @@ class PasswordResetConfirmView(generics.GenericAPIView):
                 token.blacklist()
         except Exception:
             pass
-        send_password_reset_success_email(user.email)
+        send_password_reset_success_email(user)
         return Response(
             {"detail": "Password has been reset successfully. You can now log in with your new password."},
             status=status.HTTP_200_OK
