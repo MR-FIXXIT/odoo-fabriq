@@ -16,6 +16,9 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
+        # Override the default 'user_id' claim with your custom primary key
+        # In this case, 'loginid'
+        token['user_id'] = user.loginid
         return token
     
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
