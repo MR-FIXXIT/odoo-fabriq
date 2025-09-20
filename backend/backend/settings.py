@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'account',
+    'inventory',
+    'manufacturing',
 ]
 
 MIDDLEWARE = [
@@ -83,7 +85,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'testodoo',
-        'USER': 'postgres',
+        'USER': 'Naveen',
         'PASSWORD': 'admin',
         'HOST': 'localhost',
         'PORT': '5432',
