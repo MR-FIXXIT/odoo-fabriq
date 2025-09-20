@@ -1,14 +1,17 @@
+# In auth/views.py
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework import status,permissions,generics
-from rest_framework import permissions,status
-from .models import CustomUser 
+from rest_framework import status, permissions, generics
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from . import serializers as s
 from django.conf import settings
 from django.utils import timezone
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.tokens import RefreshToken
+import random
+from datetime import timedelta
+from .models import CustomUser, OTP
+from .email import send_templated_email
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = s.CustomTokenObtainPairSerializer
@@ -17,35 +20,17 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == 200:
-
-            # --- NEW: Update last_login timestamp ---
-            # Get the user object from the request (it's set by CustomCookieJWTAuthentication if authenticated)
-            # Or, more robustly, get it from the serializer's context/validated_data
-            # The serializer.user attribute holds the authenticated user after .is_valid()
-            try:
-                # Get the authenticated user instance directly from the serializer
-                # Ensure you have 'from Login.serializers import CustomTokenObtainPairSerializer as s'
-                # and that CustomTokenObtainPairSerializer has a 'user' attribute after validation.
-                serializer = self.get_serializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                user = serializer.user # This attribute is typically set by TokenObtainPairSerializer
-                user.last_login = timezone.now()
-                user.save(update_fields=['last_login']) # Only update the last_login field for efficiency
-            except Exception as e:
-                # Log this if it happens, but don't prevent token issuance
-                print(f"Error updating last_login for user: {e}")
-            
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            user = serializer.user
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
             
             access_token = response.data.get('access')
             refresh_token = response.data.get('refresh')
-
-            # Read cookie and token lifetime details from settings.SIMPLE_JWT
             access_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
             refresh_lifetime = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
-
-            # Use timezone.now() for expiry if USE_TZ = True
-            # Otherwise, use datetime.utcnow()
-            current_time = timezone.now() # or datetime.utcnow() if USE_TZ=False
+            current_time = timezone.now()
             access_expiry = current_time + access_lifetime
             refresh_expiry = current_time + refresh_lifetime
 
@@ -67,9 +52,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
                 path=settings.SIMPLE_JWT['AUTH_COOKIE_PATH'],
             )
-
-            # Optionally, remove tokens from the JSON response body
-            # if you *only* want them in cookies for security
+            
             if 'access' in response.data:
                 del response.data['access']
             if 'refresh' in response.data:
@@ -82,7 +65,6 @@ class CustomTokenRefreshView(TokenRefreshView):
 
     def post(self, request, *args, **kwargs):
         try:
-            # Pass the request to the serializer context so it can access request.COOKIES for the refresh token
             serializer = self.get_serializer(data=request.data, context={'request': request})
             serializer.is_valid(raise_exception=True)
         except TokenError as e:
@@ -91,18 +73,13 @@ class CustomTokenRefreshView(TokenRefreshView):
             return Response({'detail': f"An error occurred during token refresh: {e}"}, status=status.HTTP_400_BAD_REQUEST)
 
         response = Response(serializer.validated_data, status=status.HTTP_200_OK)
-
         access_token = serializer.validated_data.get('access')
-        refresh_token = serializer.validated_data.get('refresh') # Will be present if ROTATE_REFRESH_TOKENS is True
-        
-        # Read cookie and token lifetime details from settings.SIMPLE_JWT
+        refresh_token = serializer.validated_data.get('refresh')
         access_lifetime = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']
         refresh_lifetime = settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']
-
         current_time = timezone.now()
         access_expiry = current_time + access_lifetime
 
-        # Set new access token cookie
         response.set_cookie(
             key=settings.SIMPLE_JWT['AUTH_COOKIE'],
             value=access_token,
@@ -113,7 +90,6 @@ class CustomTokenRefreshView(TokenRefreshView):
             path=settings.SIMPLE_JWT['AUTH_COOKIE_PATH'],
         )
 
-        # Set new refresh token cookie if ROTATE_REFRESH_TOKENS is True
         if settings.SIMPLE_JWT.get('ROTATE_REFRESH_TOKENS') and refresh_token:
             refresh_expiry = current_time + refresh_lifetime
             response.set_cookie(
@@ -130,14 +106,12 @@ class CustomTokenRefreshView(TokenRefreshView):
 
         if 'access' in response.data:
             del response.data['access']
-
         return response
 
 class CustomTokenVerifyView(TokenVerifyView):
     serializer_class = s.CustomTokenVerifySerializer
 
     def post(self, request, *args, **kwargs):
-        # Ensure the serializer gets the request context to read cookies.
         serializer = self.get_serializer(data=request.data, context={'request': request})
         try:
             serializer.is_valid(raise_exception=True)
@@ -149,64 +123,95 @@ class CustomTokenVerifyView(TokenVerifyView):
 
 class UserRegisterViews(APIView):
     permission_classes = [permissions.AllowAny]
-    def post(self,request):
-        try:
-            data = request.data.copy()
-                # Set a default for role if not provided
-            if not data.get('role'):
-                data['role'] = 'user'          
-            try:
-                serializer = s.SignUpSerializers(data=data)
-                if serializer.is_valid():
-                    user = serializer.save()
-                    return Response({'message': 'User created successfully', 'Name': user.name}, status=status.HTTP_201_CREATED)
-                else:
-                    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)    
-        except Exception as e:
-            return Response({'error': 'Something went wrong when trying to register your account'+"\n"+str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-                
-class LoadUserView(APIView):
-    def get (self):
-        try:
-            user = CustomUser.objects.all()
-            serializer = s.LoginSerializers(user)
-            return Response({"data":serializer.data}, status=status.HTTP_200_OK)
-        except CustomUser.DoesNotExist:
-            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({'error': 'Something went wrong when trying to load your account'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def post(self, request):
+        data = request.data.copy()
+        if not data.get('role'):
+            data['role'] = 'owner'
+        
+        serializer = s.SignUpSerializers(data=data)
+        
+        if serializer.is_valid(raise_exception=True):
+            user = serializer.save()
+            return Response({'message': 'User created successfully', 'loginid': user.loginid}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class PasswordResetRequestView(generics.GenericAPIView):
-    """
-    API endpoint to request a password reset email.
-    """
+class LoadUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        serializer = s.SignUpSerializers(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class OTPRequestView(generics.GenericAPIView):
     serializer_class = s.PasswordResetRequestSerializer
-    permission_classes = [permissions.AllowAny] # Allow unauthenticated users to request a reset
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save() # This method sends the email if the user exists.
+        
+        user = serializer.user
+        
+        OTP.objects.filter(user=user).delete()
+        
+        otp_code = str(random.randint(100000, 999999))
+        
+        OTP.objects.create(
+            user=user,
+            otp_code=otp_code,
+            expires_at=timezone.now() + timedelta(minutes=5)
+        )
 
-        # Always return a generic success message for security reasons
+        subject = "Password Reset OTP"
+        context = {
+            'user': user,
+            'otp': otp_code,
+            'site_name': settings.SITE_NAME,
+        }
+        send_templated_email(
+            subject,
+            'emails/password_reset_otp.txt',
+            'emails/password_reset_otp.html',
+            [user.email],
+            context
+        )
+
         return Response(
-            {"detail": "If a matching account was found, a password reset email has been sent."},
+            {"detail": "If a matching account was found, an OTP has been sent."},
             status=status.HTTP_200_OK
         )
 
 class PasswordResetConfirmView(generics.GenericAPIView):
-    """
-    API endpoint to confirm password reset with UID and token, and set new password.
-    """
     serializer_class = s.PasswordResetConfirmSerializer
-    permission_classes = [permissions.AllowAny] # Allow unauthenticated users to confirm reset
+    permission_classes = [permissions.AllowAny]
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save() # This method updates the user's password.
+        user = serializer.validated_data['user']
+        otp_code = serializer.validated_data['otp']
+        new_password = serializer.validated_data['new_password']
+
+        otp_instance = OTP.objects.filter(user=user, otp_code=otp_code).first()
+        if not otp_instance or not otp_instance.is_valid():
+            return Response(
+                {"detail": "Invalid or expired OTP."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.set_password(new_password)
+        user.password_last_changed = timezone.now()
+        user.save()
+
+        otp_instance.delete()
+        
+        try:
+            outstanding_tokens = RefreshToken.objects.filter(user=user)
+            for token in outstanding_tokens:
+                token.blacklist()
+        except Exception:
+            pass
 
         return Response(
             {"detail": "Password has been reset successfully. You can now log in with your new password."},
@@ -214,54 +219,34 @@ class PasswordResetConfirmView(generics.GenericAPIView):
         )
     
 class LogoutView(APIView):
-    """
-    API endpoint for user logout.
-    Blacklists the refresh token and clears access and refresh token cookies.
-    """
-    permission_classes = [permissions.IsAuthenticated] # Ensures only authenticated users can hit this endpoint
+    permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
         response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
-
-        # 1. Get refresh token from cookie
         refresh_token_cookie_name = settings.SIMPLE_JWT['AUTH_COOKIE_REFRESH']
         refresh_token = request.COOKIES.get(refresh_token_cookie_name)
 
         if refresh_token:
             try:
-                # Blacklist the refresh token
                 token = RefreshToken(refresh_token)
                 token.blacklist()
-                # print(f"Refresh token blacklisted for user: {request.user.email}") # Optional: For debugging
-            except (InvalidToken, TokenError) as e:
-                # If the token is already invalid or expired, we can just proceed with clearing cookies.
-                # This can happen if the token was manually revoked or expired naturally.
-                # print(f"Attempted to blacklist an invalid or expired refresh token: {e}") # Optional: For debugging
-                pass # Silently proceed to clear cookies
-            except Exception as e:
-                # Catch any other unexpected errors during blacklisting
-                # print(f"Error blacklisting refresh token: {e}") # Optional: For debugging
-                # Depending on your error handling policy, you might want to log this
-                pass # Silently proceed to clear cookies
-        # else:
-            # print("No refresh token found in cookie during logout attempt.") # Optional: For debugging
+            except (InvalidToken, TokenError):
+                pass
+            except Exception:
+                pass
 
-
-        # 2. Clear access token cookie
         access_token_cookie_name = settings.SIMPLE_JWT['AUTH_COOKIE']
-        if access_token_cookie_name in request.COOKIES: # Check if the cookie exists before trying to delete
+        if access_token_cookie_name in request.COOKIES:
             response.delete_cookie(
                 key=access_token_cookie_name,
-                path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'), # Use .get() with default for robustness
+                path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'),
                 domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN', None)
             )
 
-        # 3. Clear refresh token cookie
-        if refresh_token_cookie_name in request.COOKIES: # Check if the cookie exists before trying to delete
+        if refresh_token_cookie_name in request.COOKIES:
             response.delete_cookie(
                 key=refresh_token_cookie_name,
                 path=settings.SIMPLE_JWT.get('AUTH_COOKIE_PATH', '/'),
                 domain=settings.SIMPLE_JWT.get('AUTH_COOKIE_DOMAIN', None)
             )
-
         return response

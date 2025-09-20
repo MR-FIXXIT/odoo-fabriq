@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
-    'auth',
+    'account',
 ]
 
 MIDDLEWARE = [
@@ -132,15 +132,14 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'dreamsmithtestemailid@gmail.com'
-EMAIL_HOST_PASSWORD = 'drizhvtpntccrmgs '
-
-DEFAULT_FROM_EMAIL = 'dreamsmithtestemailid@gmail.com'
+EMAIL_HOST_USER = 'testrun120021@gmail.com'
+EMAIL_HOST_PASSWORD = 'evre hzgv tbnh smaa'
+DEFAULT_FROM_EMAIL = 'testrun120021@gmail.com'
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 
 SITE_NAME = "Fabriq"
 
-AUTH_USER_MODEL = 'users.CustomUser'
+AUTH_USER_MODEL = 'account.CustomUser'
 
 # Custom User Model
 RESET_FRAMEWORK = {
