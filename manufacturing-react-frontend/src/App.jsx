@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 // Pages
 import LoginPage from "./pages/Auth/LoginPage";
 import SignupPage from "./pages/Auth/SignupPage";
-import DashboardPage from "./pages/Dashboard";
+import Dashboard from "./pages/Dashboard";
 
 export default function App() {
   return (
@@ -28,6 +28,5 @@ function ProtectedApp() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  // Only show Dashboard UI
-  return <DashboardPage />;
+  return <Dashboard />;
 }
