@@ -16,6 +16,7 @@ const sidebarStyles = {
   sidebarClose: { fontSize: 22, background: "none", border: "none", cursor: "pointer", padding: "2px 8px" },
 };
 
+// Removed Manufacturing Orders from menu list as per previous update
 const menuItems = [
   { key: "dashboard", label: "Dashboard" },
   { key: "boms", label: "Bills of Materials" },
@@ -68,13 +69,17 @@ export default function DashboardPage() {
   const editOrder = (idx) => { setEditingOrder(idx); setOrderForm(orders[idx]); };
   const deleteOrder = (idx) => { const updated = [...orders]; updated.splice(idx, 1); saveOrders(updated); };
 
-  // Work Center handlers
+  // Work Center handlers with fixes
   const addWorkCenter = () => {
     if (!newCenter.name || !newCenter.costPerHour) return alert("Enter all fields");
-    saveWorkCenters([...workCenters, { ...newCenter }]);
-    setNewCenter({ name: "", costPerHour: "" });
+    const updated = [...workCenters, { ...newCenter }];
+    saveWorkCenters(updated);
   };
-  const deleteWorkCenter = (idx) => { const updated = [...workCenters]; updated.splice(idx, 1); saveWorkCenters(updated); };
+  const deleteWorkCenter = (idx) => {
+    const updated = workCenters.filter((_, i) => i !== idx);
+    saveWorkCenters(updated);
+  };
+
   const filteredCenters = workCenters.filter((wc) => wc.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   // Logout
@@ -231,6 +236,7 @@ const burgerButton = { background: "none", border: "none", fontSize: 26, marginR
 const headerCenter = { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center" };
 const appTitle = { fontWeight: 700, fontSize: 22, color: "#183153", letterSpacing: 0.5 };
 const headerRight = { flex: "0 0 auto", display: "flex", alignItems: "center", position: "relative" };
+const userChip = { marginLeft: 10, fontSize: 16, fontWeight: 500, color: "#34495e", borderRadius: 20, background: "#f2f5fa", padding: "8px 18px" };
 const profileSidebarStyles = { 
   sidebar: { position: "absolute", right: 0, top: 50, width: 120, background: "#fff", border: "1px solid #eaeaea", borderRadius: 8, padding: 8, zIndex: 1600, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }, 
   closeBtn: { position: "absolute", top: 4, right: 6, background: "none", border: "none", fontSize: 18, cursor: "pointer" }, 
