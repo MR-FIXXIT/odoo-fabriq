@@ -16,11 +16,20 @@ const sidebarStyles = {
   sidebarClose: { fontSize: 22, background: "none", border: "none", cursor: "pointer", padding: "2px 8px" },
 };
 
-// Removed Manufacturing Orders from menu list as per previous update
 const menuItems = [
   { key: "dashboard", label: "Dashboard" },
   { key: "boms", label: "Bills of Materials" },
   { key: "stockledger", label: "Stock Ledger" },
+];
+
+const allStates = [
+  "Draft",
+  "Confirmed",
+  "In-Progress",
+  "To Close",
+  "Not Assigned",
+  "Late",
+  "Done",
 ];
 
 export default function DashboardPage() {
@@ -31,15 +40,17 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  // Manufacturing Orders
   const [orders, setOrders] = useState([]);
   const [editingOrder, setEditingOrder] = useState(null);
   const [orderForm, setOrderForm] = useState({ reference: "", startDate: "", finishedProduct: "", componentStatus: "", quantity: "", unit: "", state: "" });
 
-  // Work Centers
   const [workCenters, setWorkCenters] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [newCenter, setNewCenter] = useState({ name: "", costPerHour: "" });
+
+  // New: state filter for orders
+  const [selectedState, setSelectedState] = useState("All");
+  const [orderSearchTerm, setOrderSearchTerm] = useState("");
 
   useEffect(() => {
     const storedOrders = JSON.parse(localStorage.getItem("orders")) || [];
@@ -55,7 +66,6 @@ export default function DashboardPage() {
   const saveOrders = (updated) => { setOrders(updated); localStorage.setItem("orders", JSON.stringify(updated)); };
   const saveWorkCenters = (updated) => { setWorkCenters(updated); localStorage.setItem("workCenters", JSON.stringify(updated)); };
 
-  // Manufacturing Orders handlers
   const handleOrderChange = (field, value) => setOrderForm({ ...orderForm, [field]: value });
   const saveOrder = () => {
     if (!orderForm.reference) return alert("Reference is required");
@@ -69,7 +79,6 @@ export default function DashboardPage() {
   const editOrder = (idx) => { setEditingOrder(idx); setOrderForm(orders[idx]); };
   const deleteOrder = (idx) => { const updated = [...orders]; updated.splice(idx, 1); saveOrders(updated); };
 
-  // Work Center handlers with fixes
   const addWorkCenter = () => {
     if (!newCenter.name || !newCenter.costPerHour) return alert("Enter all fields");
     const updated = [...workCenters, { ...newCenter }];
@@ -79,14 +88,26 @@ export default function DashboardPage() {
     const updated = workCenters.filter((_, i) => i !== idx);
     saveWorkCenters(updated);
   };
-
   const filteredCenters = workCenters.filter((wc) => wc.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // Logout
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/login");
-  };
+  // Filter orders by search term
+  const filteredOrders = orders.filter((order) => {
+    const term = orderSearchTerm.toLowerCase();
+    return (
+      order.reference.toLowerCase().includes(term) ||
+      order.startDate.toLowerCase().includes(term) ||
+      order.finishedProduct.toLowerCase().includes(term) ||
+      order.componentStatus.toLowerCase().includes(term) ||
+      order.quantity.toString().includes(term) ||
+      order.unit.toLowerCase().includes(term) ||
+      order.state.toLowerCase().includes(term)
+    );
+  });
+
+  // Filter orders by selected state
+  const filteredByState = selectedState === "All"
+    ? filteredOrders
+    : filteredOrders.filter(o => o.state === selectedState);
 
   if (view === "boms") return <BillsOfMaterialsPage onBack={() => setView("dashboard")} />;
   if (view === "stockledger") return <StockLedgerPage onBack={() => setView("dashboard")} />;
@@ -129,7 +150,7 @@ export default function DashboardPage() {
             <div style={profileSidebarStyles.sidebar}>
               <button style={profileSidebarStyles.closeBtn} onClick={() => setProfileOpen(false)}>×</button>
               <ul style={profileSidebarStyles.list}>
-                <li style={profileSidebarStyles.item} onClick={handleLogout}>Logout</li>
+                <li style={profileSidebarStyles.item} onClick={() => { localStorage.clear(); navigate("/login"); }}>Logout</li>
               </ul>
             </div>
           )}
@@ -138,6 +159,50 @@ export default function DashboardPage() {
 
       <div style={{ padding: 24 }}>
         <h2>Dashboard</h2>
+
+        {/* State filter buttons */}
+        <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+          <button
+            style={{
+              padding: "10px 18px",
+              borderRadius: 20,
+              border: "none",
+              background: selectedState === "All" ? "#1976d2" : "#f1f5fb",
+              color: selectedState === "All" ? "#fff" : "#34495e",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+            onClick={() => setSelectedState("All")}
+          >
+            All
+          </button>
+          {allStates.map(state => (
+            <button
+              key={state}
+              style={{
+                padding: "10px 18px",
+                borderRadius: 20,
+                border: "none",
+                background: selectedState === state ? "#1976d2" : "#f1f5fb",
+                color: selectedState === state ? "#fff" : "#34495e",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+              onClick={() => setSelectedState(state)}
+            >
+              {state}
+            </button>
+          ))}
+        </div>
+
+        {/* Search Input for Manufacturing Orders */}
+        <input
+          type="text"
+          placeholder="Search Manufacturing Orders..."
+          value={orderSearchTerm}
+          onChange={(e) => setOrderSearchTerm(e.target.value)}
+          style={{ marginBottom: 16, padding: 8, width: "100%", maxWidth: 400 }}
+        />
 
         {/* Manufacturing Orders Table */}
         <div style={{ marginTop: 20 }}>
@@ -156,9 +221,9 @@ export default function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {orders.length === 0 ? (
+              {filteredByState.length === 0 ? (
                 <tr><td colSpan={8} style={{ textAlign: "center", padding: 12 }}>No manufacturing orders found.</td></tr>
-              ) : orders.map((order, idx) => (
+              ) : filteredByState.map((order, idx) => (
                 <tr key={idx}>
                   <td style={styles.td}>{order.reference}</td>
                   <td style={styles.td}>{order.startDate}</td>
