@@ -26,17 +26,17 @@ const orders = [
 export default function DashboardPage() {
   return (
     <div style={styles.pageContainer}>
-      
+      {/* Header */}
       <header style={styles.header}>
         <div style={styles.headerLeft}>
           <div style={styles.hamburger}>☰</div>
         </div>
         <div style={styles.headerCenter}>
-          <img src="/logo.png" alt="Company Logo" style={styles.logo} />
-          <span style={styles.appName}>Fabriq</span>
+          <img src="src\components\Logo.png" alt="App Logo" style={{height: 64, width: 64}} />
+        <img src="src\components\nameimage.jpeg" alt="App Logo" style={{height: 32, width: 128, marginTop: 8}} />
         </div>
         <div style={styles.headerRight}>
-          <div style={styles.avatar}>User Avatar</div>
+          <div style={styles.avatar}>User</div>
         </div>
       </header>
 
@@ -106,7 +106,9 @@ export default function DashboardPage() {
             {/* Empty Rows */}
             {[...Array(5)].map((_, i) => (
               <tr key={i + 100}>
-                <td><input type="checkbox" /></td>
+                <td>
+                  <input type="checkbox" />
+                </td>
                 <td colSpan={7}></td>
               </tr>
             ))}
