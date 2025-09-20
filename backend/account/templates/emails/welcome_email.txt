@@ -2,9 +2,11 @@ Welcome to {{ site_name }}, {{ user.loginid|default:user.email }}!
 
 Thank you for registering a {{ role }} account with us. We are excited to have you on board!
 
-You can now log in using your email: {{ user.loginid }}
+The owner of the business will review your request and activate your account shortly.
 
-Once logged in, please update your profile with more details. This is necessary for our team to review and activate your account, allowing you to access all features.
+Your login details are as follows:
+- Login ID: {{ user.loginid }}
+- Email: {{ user.email }}
 
 If you have any questions, feel free to contact us.
 

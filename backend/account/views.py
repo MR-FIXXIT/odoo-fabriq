@@ -212,7 +212,7 @@ class PasswordResetConfirmView(generics.GenericAPIView):
                 token.blacklist()
         except Exception:
             pass
-
+        send_password_reset_success_email(user.email)
         return Response(
             {"detail": "Password has been reset successfully. You can now log in with your new password."},
             status=status.HTTP_200_OK

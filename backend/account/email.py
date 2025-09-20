@@ -71,3 +71,24 @@ def send_templated_email(
 #     send_templated_email(
 #         subject, template_name_txt, template_name_html, recipient_list, context, from_email, fail_silently
 #     )
+
+def send_password_reset_success_email(user):
+    """
+    Send a confirmation email after successful password reset
+    """
+    context = {
+        'user': user,
+    }
+    
+    subject = 'Password Reset Successful'
+    text_content = render_to_string('emails/password_reset_success.txt', context)
+    html_content = render_to_string('emails/password_reset_success.html', context)
+    
+    msg = EmailMultiAlternatives(
+        subject,
+        text_content,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email]
+    )
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()
