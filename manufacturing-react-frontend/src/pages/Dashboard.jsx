@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { styles } from "../DashboardStyles";
-import ManufacturingOrderPage from "./ManufacturingOrderPage";
 import BillsOfMaterialsPage from "./BillsOfMaterialsPage";
 import StockLedgerPage from "./StockLedgerPage";
+import { useNavigate } from "react-router-dom";
 
 // Sidebar style objects
 const sidebarStyles = {
@@ -16,61 +16,55 @@ const sidebarStyles = {
   sidebarClose: { fontSize: 22, background: "none", border: "none", cursor: "pointer", padding: "2px 8px" },
 };
 
+// Menu items: Removed Manufacturing Orders
 const menuItems = [
   { key: "dashboard", label: "Dashboard" },
-  { key: "mo", label: "Manufacturing Orders" },
   { key: "boms", label: "Bills of Materials" },
   { key: "stockledger", label: "Stock Ledger" },
 ];
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
+  const profileRef = useRef();
+
   const [view, setView] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  // Manufacturing Orders
   const [orders, setOrders] = useState([]);
-  const [workCenters, setWorkCenters] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [newCenter, setNewCenter] = useState({ name: "", costPerHour: "" });
   const [editingOrder, setEditingOrder] = useState(null);
   const [orderForm, setOrderForm] = useState({ reference: "", startDate: "", finishedProduct: "", componentStatus: "", quantity: "", unit: "", state: "" });
 
-  const profileRef = useRef();
-  const [profileOpen, setProfileOpen] = useState(false);
+  // Work Centers
+  const [workCenters, setWorkCenters] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [newCenter, setNewCenter] = useState({ name: "", costPerHour: "" });
 
-  // Load stored data
   useEffect(() => {
+    // Load stored data
     const storedOrders = JSON.parse(localStorage.getItem("orders")) || [];
     setOrders(storedOrders);
     const storedCenters = JSON.parse(localStorage.getItem("workCenters")) || [];
     setWorkCenters(storedCenters);
 
+    // Close profile if clicked outside
     const handleClick = (e) => { if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false); };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Save functions
   const saveOrders = (updated) => { setOrders(updated); localStorage.setItem("orders", JSON.stringify(updated)); };
   const saveWorkCenters = (updated) => { setWorkCenters(updated); localStorage.setItem("workCenters", JSON.stringify(updated)); };
 
-  // Work Center
-  const addWorkCenter = () => {
-    if (!newCenter.name || !newCenter.costPerHour) return alert("Enter all fields");
-    const updated = [...workCenters, { ...newCenter }];
-    saveWorkCenters(updated);
-    setNewCenter({ name: "", costPerHour: "" });
-  };
-  const deleteWorkCenter = (index) => { const updated = [...workCenters]; updated.splice(index, 1); saveWorkCenters(updated); };
-  const filteredCenters = workCenters.filter((wc) => wc.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
-  // Manufacturing Orders
+  // Manufacturing Orders handlers
   const handleOrderChange = (field, value) => setOrderForm({ ...orderForm, [field]: value });
   const saveOrder = () => {
     if (!orderForm.reference) return alert("Reference is required");
     let updatedOrders = [...orders];
-    if (editingOrder !== null) {
-      updatedOrders[editingOrder] = orderForm;
-    } else {
-      updatedOrders.push(orderForm);
-    }
+    if (editingOrder !== null) updatedOrders[editingOrder] = orderForm;
+    else updatedOrders.push(orderForm);
     saveOrders(updatedOrders);
     setEditingOrder(null);
     setOrderForm({ reference: "", startDate: "", finishedProduct: "", componentStatus: "", quantity: "", unit: "", state: "" });
@@ -78,8 +72,22 @@ export default function DashboardPage() {
   const editOrder = (idx) => { setEditingOrder(idx); setOrderForm(orders[idx]); };
   const deleteOrder = (idx) => { const updated = [...orders]; updated.splice(idx, 1); saveOrders(updated); };
 
-  // --- View Routing ---
-  if (view === "mo") return <ManufacturingOrderPage onBack={() => setView("dashboard")} orders={orders} saveOrders={saveOrders} />;
+  // Work Center handlers
+  const addWorkCenter = () => {
+    if (!newCenter.name || !newCenter.costPerHour) return alert("Enter all fields");
+    saveWorkCenters([...workCenters, { ...newCenter }]);
+    setNewCenter({ name: "", costPerHour: "" });
+  };
+  const deleteWorkCenter = (idx) => { const updated = [...workCenters]; updated.splice(idx, 1); saveWorkCenters(updated); };
+  const filteredCenters = workCenters.filter((wc) => wc.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
+
+  // View Routing
   if (view === "boms") return <BillsOfMaterialsPage onBack={() => setView("dashboard")} />;
   if (view === "stockledger") return <StockLedgerPage onBack={() => setView("dashboard")} />;
 
@@ -123,7 +131,7 @@ export default function DashboardPage() {
               <ul style={profileSidebarStyles.list}>
                 <li style={profileSidebarStyles.item}>My Profile</li>
                 <li style={profileSidebarStyles.item}>My Reports</li>
-                <li style={{ ...profileSidebarStyles.item, color: "red" }}>Logout</li>
+                <li style={{ ...profileSidebarStyles.item, color: "red", cursor: "pointer" }} onClick={handleLogout}>Logout</li>
               </ul>
             </div>
           )}
@@ -151,26 +159,22 @@ export default function DashboardPage() {
             </thead>
             <tbody>
               {orders.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: "center", padding: 12 }}>No manufacturing orders found.</td>
+                <tr><td colSpan={8} style={{ textAlign: "center", padding: 12 }}>No manufacturing orders found.</td></tr>
+              ) : orders.map((order, idx) => (
+                <tr key={idx}>
+                  <td style={styles.td}>{order.reference}</td>
+                  <td style={styles.td}>{order.startDate}</td>
+                  <td style={styles.td}>{order.finishedProduct}</td>
+                  <td style={styles.td}>{order.componentStatus}</td>
+                  <td style={styles.td}>{order.quantity}</td>
+                  <td style={styles.td}>{order.unit}</td>
+                  <td style={styles.td}>{order.state}</td>
+                  <td style={styles.td}>
+                    <button onClick={() => editOrder(idx)} style={{ marginRight: 6 }}>Edit</button>
+                    <button onClick={() => deleteOrder(idx)} style={{ color: "red" }}>Delete</button>
+                  </td>
                 </tr>
-              ) : (
-                orders.map((order, idx) => (
-                  <tr key={idx}>
-                    <td style={styles.td}>{order.reference}</td>
-                    <td style={styles.td}>{order.startDate}</td>
-                    <td style={styles.td}>{order.finishedProduct}</td>
-                    <td style={styles.td}>{order.componentStatus}</td>
-                    <td style={styles.td}>{order.quantity}</td>
-                    <td style={styles.td}>{order.unit}</td>
-                    <td style={styles.td}>{order.state}</td>
-                    <td style={styles.td}>
-                      <button onClick={() => editOrder(idx)} style={{ marginRight: 6 }}>Edit</button>
-                      <button onClick={() => deleteOrder(idx)} style={{ color: "red" }}>Delete</button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
 
@@ -213,15 +217,13 @@ export default function DashboardPage() {
             <tbody>
               {filteredCenters.length === 0 ? (
                 <tr><td colSpan={3} style={{ textAlign: "center", padding: 12 }}>No work centers found.</td></tr>
-              ) : (
-                filteredCenters.map((wc, idx) => (
-                  <tr key={idx}>
-                    <td style={styles.td}>{wc.name}</td>
-                    <td style={styles.td}>{wc.costPerHour}</td>
-                    <td style={styles.td}><button onClick={() => deleteWorkCenter(idx)} style={{ color: "red", cursor: "pointer" }}>Delete</button></td>
-                  </tr>
-                ))
-              )}
+              ) : filteredCenters.map((wc, idx) => (
+                <tr key={idx}>
+                  <td style={styles.td}>{wc.name}</td>
+                  <td style={styles.td}>{wc.costPerHour}</td>
+                  <td style={styles.td}><button onClick={() => deleteWorkCenter(idx)} style={{ color: "red", cursor: "pointer" }}>Delete</button></td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -230,7 +232,7 @@ export default function DashboardPage() {
   );
 }
 
-// --- Header & Profile styles ---
+// Header & profile styles
 const headerStyles = { display: "flex", alignItems: "center", justifyContent: "space-between", backgroundColor: "#fff", padding: "0 24px", height: 72, borderBottom: "1px solid #eaeaea", boxShadow: "0 2px 10px rgba(0,0,0,0.04)", position: "sticky", top: 0, zIndex: 1500 };
 const burgerButton = { background: "none", border: "none", fontSize: 26, marginRight: 16, cursor: "pointer", color: "#34495e", padding: "4px 8px", borderRadius: 6 };
 const headerCenter = { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center" };
