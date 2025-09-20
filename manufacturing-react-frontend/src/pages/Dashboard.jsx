@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { styles } from "../DashboardStyles";
 import ManufacturingOrderPage from "./ManufacturingOrderPage";
 import BillsOfMaterialsPage from "./BillsOfMaterialsPage";
+import StockLedgerPage from "./StockLedgerPage";
 
 // Sidebar style objects
 const sidebarStyles = {
@@ -58,16 +59,10 @@ const sidebarStyles = {
     fontWeight: 600,
     color: "#1976d2",
   },
-  sidebarClose: {
-    fontSize: 22,
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "2px 8px",
-  },
+  sidebarClose: { fontSize: 22, background: "none", border: "none", cursor: "pointer", padding: "2px 8px" },
 };
 
-// Sidebar menu items
+// Master menu
 const menuItems = [
   { key: "dashboard", label: "Dashboard" },
   { key: "mo", label: "Manufacturing Orders" },
@@ -78,33 +73,30 @@ const menuItems = [
 export default function DashboardPage() {
   const [view, setView] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const [orders, setOrders] = useState([]);
   const [workCenters, setWorkCenters] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [newCenter, setNewCenter] = useState({ name: "", costPerHour: "" });
 
-  // User profile sidebar
+  // Profile sidebar
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef();
 
+  // Load stored data
   useEffect(() => {
-    // Load stored data
     const storedOrders = JSON.parse(localStorage.getItem("orders")) || [];
     setOrders(storedOrders);
     const storedCenters = JSON.parse(localStorage.getItem("workCenters")) || [];
     setWorkCenters(storedCenters);
 
-    // Close profile menu on outside click
     const handleClick = (e) => {
-      if (profileRef.current && !profileRef.current.contains(e.target)) {
-        setProfileOpen(false);
-      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Save functions
   const saveOrders = (updated) => {
     setOrders(updated);
     localStorage.setItem("orders", JSON.stringify(updated));
@@ -114,7 +106,7 @@ export default function DashboardPage() {
     localStorage.setItem("workCenters", JSON.stringify(updated));
   };
 
-  // Work Center logic
+  // Work Center
   const addWorkCenter = () => {
     if (!newCenter.name || !newCenter.costPerHour) return alert("Enter all fields");
     const updated = [...workCenters, { ...newCenter }];
@@ -126,14 +118,13 @@ export default function DashboardPage() {
     updated.splice(index, 1);
     saveWorkCenters(updated);
   };
-  const filteredCenters = workCenters.filter((wc) =>
-    wc.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCenters = workCenters.filter((wc) => wc.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  // --- View routing ---
+  // --- View Routing ---
   if (view === "mo")
     return <ManufacturingOrderPage onBack={() => setView("dashboard")} orders={orders} saveOrders={saveOrders} />;
   if (view === "boms") return <BillsOfMaterialsPage onBack={() => setView("dashboard")} />;
+  if (view === "stockledger") return <StockLedgerPage onBack={() => setView("dashboard")} />;
 
   return (
     <div style={styles.pageContainer}>
@@ -143,22 +134,14 @@ export default function DashboardPage() {
       <nav style={{ ...sidebarStyles.sidebar, ...(sidebarOpen ? {} : sidebarStyles.sidebarClosed) }}>
         <div style={sidebarStyles.menuHeader}>
           Master Menu
-          <button style={sidebarStyles.sidebarClose} aria-label="Close" onClick={() => setSidebarOpen(false)}>
-            ×
-          </button>
+          <button style={sidebarStyles.sidebarClose} onClick={() => setSidebarOpen(false)}>×</button>
         </div>
         <ul style={sidebarStyles.sidebarList}>
           {menuItems.map((menu) => (
             <li key={menu.key}>
               <button
-                style={{
-                  ...sidebarStyles.sidebarItem,
-                  ...(view === menu.key ? sidebarStyles.sidebarItemActive : {}),
-                }}
-                onClick={() => {
-                  setSidebarOpen(false);
-                  setView(menu.key);
-                }}
+                style={{ ...sidebarStyles.sidebarItem, ...(view === menu.key ? sidebarStyles.sidebarItemActive : {}) }}
+                onClick={() => { setSidebarOpen(false); setView(menu.key); }}
               >
                 {menu.label}
               </button>
@@ -169,29 +152,20 @@ export default function DashboardPage() {
 
       {/* Header */}
       <header style={headerStyles}>
-        <div style={{ flex: "0 0 auto", display: "flex", alignItems: "center" }}>
-          <button style={burgerButton} onClick={() => setSidebarOpen(true)} aria-label="Open sidebar">
-            ☰
-          </button>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <button style={burgerButton} onClick={() => setSidebarOpen(true)}>☰</button>
         </div>
         <div style={headerCenter}>
           <img src="src/components/Logo.png" alt="Logo" style={{ height: 40, marginRight: 12 }} />
           <span style={appTitle}>Fabriq</span>
         </div>
         <div style={headerRight} ref={profileRef}>
-          <button
-            onClick={() => setProfileOpen((v) => !v)}
-            style={{ border: "none", background: "none", cursor: "pointer" }}
-          >
+          <button onClick={() => setProfileOpen((v) => !v)} style={{ border: "none", background: "none", cursor: "pointer" }}>
             <span style={userChip}>User</span>
           </button>
-
-          {/* Profile Sidebar */}
           {profileOpen && (
             <div style={profileSidebarStyles.sidebar}>
-              <button style={profileSidebarStyles.closeBtn} onClick={() => setProfileOpen(false)}>
-                ×
-              </button>
+              <button style={profileSidebarStyles.closeBtn} onClick={() => setProfileOpen(false)}>×</button>
               <ul style={profileSidebarStyles.list}>
                 <li style={profileSidebarStyles.item}>My Profile</li>
                 <li style={profileSidebarStyles.item}>My Reports</li>
@@ -231,9 +205,7 @@ export default function DashboardPage() {
               onChange={(e) => setNewCenter({ ...newCenter, costPerHour: e.target.value })}
               style={{ padding: 8, marginRight: 8 }}
             />
-            <button style={styles.newButton} onClick={addWorkCenter}>
-              Add
-            </button>
+            <button style={styles.newButton} onClick={addWorkCenter}>Add</button>
           </div>
           <table style={styles.table}>
             <thead>
@@ -246,9 +218,7 @@ export default function DashboardPage() {
             <tbody>
               {filteredCenters.length === 0 ? (
                 <tr>
-                  <td colSpan={3} style={{ textAlign: "center", padding: 12 }}>
-                    No work centers found.
-                  </td>
+                  <td colSpan={3} style={{ textAlign: "center", padding: 12 }}>No work centers found.</td>
                 </tr>
               ) : (
                 filteredCenters.map((wc, idx) => (
@@ -256,9 +226,7 @@ export default function DashboardPage() {
                     <td style={styles.td}>{wc.name}</td>
                     <td style={styles.td}>{wc.costPerHour}</td>
                     <td style={styles.td}>
-                      <button onClick={() => deleteWorkCenter(idx)} style={{ color: "red", cursor: "pointer" }}>
-                        Delete
-                      </button>
+                      <button onClick={() => deleteWorkCenter(idx)} style={{ color: "red", cursor: "pointer" }}>Delete</button>
                     </td>
                   </tr>
                 ))
@@ -285,22 +253,8 @@ const headerStyles = {
   top: 0,
   zIndex: 1500,
 };
-const burgerButton = {
-  background: "none",
-  border: "none",
-  fontSize: 26,
-  marginRight: 16,
-  cursor: "pointer",
-  color: "#34495e",
-  padding: "4px 8px",
-  borderRadius: 6,
-};
-const headerCenter = {
-  flex: "1 1 auto",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-};
+const burgerButton = { background: "none", border: "none", fontSize: 26, marginRight: 16, cursor: "pointer", color: "#34495e", padding: "4px 8px", borderRadius: 6 };
+const headerCenter = { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center" };
 const appTitle = { fontWeight: 700, fontSize: 22, color: "#183153", letterSpacing: 0.5 };
 const headerRight = { flex: "0 0 auto", display: "flex", alignItems: "center", position: "relative" };
 const userChip = { marginLeft: 10, fontSize: 16, fontWeight: 500, color: "#34495e", borderRadius: 20, background: "#f2f5fa", padding: "8px 18px" };
