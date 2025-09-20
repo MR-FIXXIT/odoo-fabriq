@@ -13,14 +13,12 @@ from rest_framework.exceptions import ValidationError
 User = get_user_model()
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        # Override the default 'user_id' claim with your custom primary key
-        # In this case, 'loginid'
-        token['user_id'] = user.loginid
-        return token
-    
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        # Add the loginid to the token payload
+        data['loginid'] = self.user.loginid
+        return data
+
 class CustomTokenRefreshSerializer(TokenRefreshSerializer):
     def validate(self, attrs):
         request = self.context.get('request')
@@ -29,7 +27,7 @@ class CustomTokenRefreshSerializer(TokenRefreshSerializer):
             if refresh_token:
                 attrs['refresh'] = refresh_token
         return super().validate(attrs)
-    
+
 class CustomTokenVerifySerializer(TokenVerifySerializer):
     def validate(self, attrs):
         request = self.context.get('request')
