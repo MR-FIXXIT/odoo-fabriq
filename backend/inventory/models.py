@@ -82,3 +82,34 @@ class StockLedgerEntry(models.Model):
 
     def __str__(self):
         return f"{self.product.name}: {self.quantity_changed} on {self.created_at.strftime('%Y-%m-%d')}"
+
+
+class StockBalance(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="stock_balances"
+    )
+    warehouse = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="Warehouse code/name (simple for now)",
+    )
+    qty_on_hand = models.DecimalField(
+        max_digits=18, decimal_places=4, default=Decimal("0.00")
+    )
+    reserved_qty = models.DecimalField(
+        max_digits=18, decimal_places=4, default=Decimal("0.00")
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("product", "warehouse")
+        indexes = [models.Index(fields=["product", "warehouse"])]
+
+    def available_qty(self):
+        return (self.qty_on_hand or Decimal("0")) - (self.reserved_qty or Decimal("0"))
+
+    def __str__(self):
+        wh = self.warehouse or "global"
+        return f"{self.product.sku} @ {wh}: on_hand={self.qty_on_hand} reserved={self.reserved_qty}"

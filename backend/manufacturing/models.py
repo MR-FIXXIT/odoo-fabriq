@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.conf import settings
 from inventory.models import Product
 
@@ -78,25 +79,39 @@ class ManufacturingOrder(models.Model):
         IN_PROGRESS = "IN_PROGRESS", "In Progress"
         DONE = "DONE", "Done"
         CANCELLED = "CANCELLED", "Cancelled"
+        AWAITING_MATERIALS = "AWAITING_MATERIALS", "Awaiting Materials"
 
-    mo_number = models.CharField(max_length=50, unique=True)
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    qty = models.DecimalField(max_digits=10, decimal_places=2)
-    due_date = models.DateField()
+    id = models.BigAutoField(primary_key=True)
+    mo_number = models.CharField(max_length=32, unique=True, blank=True, null=True)
+    product = models.ForeignKey(
+        "inventory.Product",
+        on_delete=models.PROTECT,
+        related_name="manufacturing_orders",
+    )
+    qty = models.DecimalField(max_digits=18, decimal_places=4)
+    due_date = models.DateField(null=True, blank=True)
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.DRAFT
+        max_length=32, choices=Status.choices, default=Status.DRAFT
     )
-    linked_bom = models.ForeignKey(BillOfMaterials, on_delete=models.PROTECT)
-    materials_snapshot = models.JSONField(
-        blank=True, null=True, help_text="Snapshot of required materials"
+    linked_bom = models.ForeignKey(
+        "manufacturing.BillOfMaterials",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="mos",
     )
+    # snapshot: list of {component_id, required_qty}
+    materials_snapshot = models.JSONField(null=True, blank=True)
+    notes = models.TextField(blank=True)
 
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(default=timezone.now, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
+    )
 
     def __str__(self):
-        return self.mo_number
+        return self.mo_number or f"MO-{self.pk}"
 
 
 # Work Order (WO) Model
@@ -119,7 +134,9 @@ class WorkOrder(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
     )
     est_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    actual_hours = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    actual_hours = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True
+    )
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING
     )
