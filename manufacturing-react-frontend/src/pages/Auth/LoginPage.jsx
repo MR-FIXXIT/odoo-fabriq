@@ -32,8 +32,8 @@ export default function LoginPage() {
         password: data.password,
       };
 
-      // POST to login endpoint that returns tokens in JSON
-      const res = await api.post("/accounts/token/", payload);
+      // POST to login endpoint; allow cookies in case server sets HttpOnly cookies
+      const res = await api.post("/account/token/", payload, { withCredentials: true });
       const body = res?.data ?? {};
       const access = body.access ?? body.token ?? body.access_token ?? null;
       const refresh = body.refresh ?? body.refresh_token ?? null;
@@ -42,12 +42,17 @@ export default function LoginPage() {
 
       if (res.status >= 200 && res.status < 300) {
         if (access) {
+          // server returned tokens in JSON -> store them
           loginWithTokens({ access, refresh });
           navigate("/");
           return;
         }
-        // If server didn't return tokens, fall back to reload-style if needed
-        console.warn("Login succeeded but no access token returned");
+        // No tokens in JSON -> maybe server set HttpOnly cookies. Reload user from server.
+        try {
+          await reloadUser();
+        } catch (e) {
+          console.warn("reloadUser after cookie login failed", e);
+        }
         navigate("/");
         return;
       }
