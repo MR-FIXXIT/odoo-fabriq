@@ -1,0 +1,14 @@
+Welcome to {{ site_name }}, {{ user.loginid|default:user.email }}!
+
+Thank you for registering a {{ role }} account with us. We are excited to have you on board!
+
+The owner of the business will review your request and activate your account shortly.
+
+Your login details are as follows:
+- Login ID: {{ user.loginid }}
+- Email: {{ user.email }}
+
+If you have any questions, feel free to contact us.
+
+Best regards,
+The {{ site_name }} Team

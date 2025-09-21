@@ -1,0 +1,14 @@
+env/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+__init__.py
+*.so
+
+migrations/
+
+htmlcov/
+.coverage
+coverage.xml

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome to {{ site_name }}!</title>
+</head>
+<body>
+    <h1>Welcome!</h1>
+    <p>Dear {{ user.loginid|default:user.email }},</p>
+
+    <p>Thank you for registering on <strong>{{ site_name }}</strong>! The owner of the business will review your request and activate your account shortly.</p>
+
+    <p>Your login details are as follows:</p>
+    <ul>
+        <li><strong>Login ID:</strong> {{ user.loginid }}</li>
+        <li><strong>Email:</strong> {{ user.email }}</li>
+    </ul>
+
+    <p>Once your account is activated, you will have full access to all the opportunities available on our platform.</p>
+
+    <p>If you have any questions, feel free to contact us.</p>
+
+    <p>Best regards,<br>
+    The {{ site_name }} Team</p>
+</body>
+</html>
