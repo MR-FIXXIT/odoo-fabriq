@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import PageTemplate from "../components/PageTemplate";
 import { useLocation, useNavigate } from "react-router-dom";
+import { listProducts } from "../api/products";
 
 export default function StockLedgerPage({ onBack }) {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState({
     product: "",
@@ -20,23 +23,46 @@ export default function StockLedgerPage({ onBack }) {
   const isCreate = (location.pathname || "").endsWith("/new");
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("stockLedger")) || [];
-    setProducts(stored);
-  }, []);
+    if (isCreate) return; // skip fetch during create mode
+    let active = true;
+    setLoading(true);
+    setError("");
+    listProducts()
+      .then((data) => {
+        if (!active) return;
+        const items = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+        setProducts(items);
+      })
+      .catch((err) => {
+        console.error("Failed to load products", err);
+        if (!active) return;
+        setError(err?.response?.data?.detail || err?.message || "Failed to load products");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => { active = false; };
+  }, [isCreate]);
 
-  const saveProduct = () => {
-    const updated = [...products, formData];
-    setProducts(updated);
-    localStorage.setItem("stockLedger", JSON.stringify(updated));
-    setFormData({ product: "", unitCost: "", unit: "", onHand: "", freeToUse: "", incoming: "", outgoing: "" });
-    // After save, navigate back to listing
-    navigate("/stockledger");
-  };
+  const rows = useMemo(() => {
+    // Map backend product objects into the ledger row shape with safe fallbacks
+    const mapped = products.map((p) => ({
+      product: p?.name ?? p?.product ?? p?.display_name ?? p?.code ?? "",
+      unitCost: p?.unit_cost ?? p?.cost ?? p?.standard_price ?? "",
+      unit: p?.unit ?? p?.uom ?? p?.unit_of_measure ?? p?.uom_name ?? "",
+      onHand: p?.on_hand ?? p?.qty_available ?? "",
+      freeToUse: p?.free_to_use ?? "",
+      incoming: p?.incoming ?? "",
+      outgoing: p?.outgoing ?? "",
+    }));
 
-  const filteredProducts = products.filter((p) =>
-    (p.product || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.unit || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    if (!searchTerm) return mapped;
+    const q = searchTerm.toLowerCase();
+    return mapped.filter((r) =>
+      String(r.product).toLowerCase().includes(q) ||
+      String(r.unit).toLowerCase().includes(q)
+    );
+  }, [products, searchTerm]);
 
   const calcTotalValue = (unitCost, onHand) => {
     const uc = parseFloat(unitCost) || 0;
@@ -109,7 +135,7 @@ export default function StockLedgerPage({ onBack }) {
         />
         <div style={{ display: "flex", gap: 8 }}>
           <button
-            onClick={saveProduct}
+            onClick={() => { /* creating via backend not defined yet; keep placeholder */ navigate("/stockledger"); }}
             style={{ padding: "8px 14px", backgroundColor: "#1976d2", color: "#fff", border: "none", borderRadius: 6 }}
           >
             Save
@@ -125,6 +151,14 @@ export default function StockLedgerPage({ onBack }) {
     </div>
   );
 
+  // Optional banners for loading/error in list mode
+  const listBanners = (!isCreate) ? (
+    <div style={{ marginBottom: 12 }}>
+      {loading && <div style={{ padding: 8, background: "#f7f8fa", border: "1px solid #e0e0e0", borderRadius: 6 }}>Loading products…</div>}
+      {error && <div style={{ padding: 8, background: "#ffecec", color: "#b00020", border: "1px solid #ffcdd2", borderRadius: 6 }}>{error}</div>}
+    </div>
+  ) : null;
+
   return (
     <PageTemplate
       title={isCreate ? "Create Stock Item" : "Stock Ledger"}
@@ -135,10 +169,10 @@ export default function StockLedgerPage({ onBack }) {
       {...(!isCreate ? { newTo: "/stockledger/new", newLabel: "New" } : {})}
       {...(!isCreate ? { searchValue: searchTerm, onSearch: (val) => setSearchTerm(val), searchPlaceholder: "Search Product / Unit" } : {})}
       columns={!isCreate ? columns : []}
-      rows={!isCreate ? filteredProducts : []}
-      rowKey={(row, idx) => row.product + "-" + idx}
-      emptyMessage="No products found."
-      beforeContent={isCreate ? createForm : null}
+      rows={!isCreate ? rows : []}
+      rowKey={(row, idx) => (row.product || "row") + "-" + idx}
+      emptyMessage={loading ? "" : "No products found."}
+      beforeContent={isCreate ? createForm : listBanners}
     />
   );
 }

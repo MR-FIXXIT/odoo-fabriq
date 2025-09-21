@@ -20,29 +20,28 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let mounted = true;
     (async () => {
+      const endpoints = ['/account/users/', '/account/load-user/', '/account/user/'];
+      let loaded = false;
       try {
-        // Prefer the actual endpoint from your backend: /account/users/
-        const endpoints = ['/account/users/', '/account/load-user/', '/account/user/'];
-        let res = null;
         for (const ep of endpoints) {
           try {
-            const r = await api.get(ep);
-            if (r && r.status === 200) { res = r; break; }
+            const r = await api.get(ep, { timeout: 2000 });
+            if (r && r.status === 200) {
+              const data = r?.data || {};
+              const loginId = data.loginid || data.loginId || data.username || data.email || null;
+              if (mounted && loginId) {
+                const u = { loginId };
+                setUser(u);
+                try { localStorage.setItem('user', JSON.stringify(u)); } catch {}
+              }
+              loaded = true;
+              break;
+            }
           } catch (e) {
-            // continue to next endpoint
+            // Continue to next endpoint; ignore individual failures/timeouts
           }
         }
-        if (!res) throw new Error('No load-user endpoint matched');
-
-        const data = res?.data || {};
-        const loginId = data.loginid || data.loginId || data.username || data.email || null;
-        if (mounted && loginId) {
-          const u = { loginId };
-          setUser(u);
-          try { localStorage.setItem('user', JSON.stringify(u)); } catch {}
-        }
-      } catch (e) {
-        if (mounted) {
+        if (!loaded && mounted) {
           setUser(null);
           try { localStorage.removeItem('user'); } catch {}
         }

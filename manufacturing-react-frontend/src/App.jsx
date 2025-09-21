@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 // Pages
 import LoginPage from "./pages/Auth/LoginPage";
 import SignupPage from "./pages/Auth/SignupPage";
+import ForgotPasswordPage from "./pages/Auth/ForgotPasswordPage";
+import ResetPasswordConfirmPage from "./pages/Auth/ResetPasswordConfirmPage";
 import Dashboard from "./pages/Dashboard";
 
 export default function App() {
@@ -14,6 +16,8 @@ export default function App() {
         {/* Public Routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/password-reset/confirm" element={<ResetPasswordConfirmPage />} />
 
         {/* Protected Route */}
         <Route path="/*" element={<ProtectedApp />} />
@@ -25,6 +29,13 @@ export default function App() {
 // Protected wrapper
 function ProtectedApp() {
   const { user, authLoading } = useAuth();
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#475569" }}>
+        Loading…
+      </div>
+    );
+  }
   if (!user) return <Navigate to="/login" replace />;
 
   return <Dashboard />;
