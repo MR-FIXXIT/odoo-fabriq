@@ -14,9 +14,10 @@ export default function ForgotPasswordPage() {
     setSending(true);
     try {
       // Send { email } to backend OTP request endpoint
-      await api.post("/account/otp-request/", { email });
+      // Do not send cookies/credentials for this unauthenticated endpoint to avoid CSRF enforcement issues
+      await api.post("/account/otp-request/", { email }, { withCredentials: false, headers: { 'Content-Type': 'application/json' } });
       alert("If an account exists for this email, an OTP or reset link has been sent.");
-      navigate("/account/password-reset/confirm", { state: { email } });
+      navigate("/password-reset/confirm", { state: { email } });
     } catch (err) {
       const errBody = err?.response?.data;
       const status = err?.response?.status;

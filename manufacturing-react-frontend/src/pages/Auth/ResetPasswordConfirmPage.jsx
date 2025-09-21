@@ -10,12 +10,41 @@ export default function ResetPasswordConfirmPage() {
   const location = useLocation();
   const presetEmail = useMemo(() => location?.state?.email || "", [location?.state?.email]);
   const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState("");
 
-  const { register, handleSubmit, formState: { errors }, setError } = useForm({
+  const { register, handleSubmit, formState: { errors }, setError, clearErrors } = useForm({
     defaultValues: { email: presetEmail }
   });
 
+  const mapServerErrorsToForm = (errBody) => {
+    if (!errBody || typeof errBody !== 'object') return null;
+    // errBody may be { field: [msg, ...] } or { detail: '...' }
+    const fieldMap = {
+      new_password: 'password',
+      re_new_password: 'confirmPassword',
+      confirm_password: 'confirmPassword',
+      password: 'password',
+      otp: 'otp',
+      email: 'email',
+    };
+
+    let aggregated = null;
+    Object.entries(errBody).forEach(([key, val]) => {
+      const targetField = fieldMap[key] || null;
+      const message = Array.isArray(val) ? val.join(' ') : String(val);
+      if (targetField) {
+        setError(targetField, { type: 'server', message });
+      } else {
+        aggregated = aggregated ? `${aggregated} ${message}` : message;
+      }
+    });
+    return aggregated;
+  };
+
   const onSubmit = async ({ email, otp, password, confirmPassword }) => {
+    clearErrors();
+    setServerError("");
+
     if (password !== confirmPassword) {
       setError("confirmPassword", { type: "validate", message: "Passwords do not match" });
       return;
@@ -25,31 +54,23 @@ export default function ResetPasswordConfirmPage() {
     try {
       // Use backend-expected field names
       const payload = { email, new_password: password, re_new_password: confirmPassword, otp };
-      console.log("Reset confirm payload keys:", Object.keys(payload));
-      await api.post("/password-reset/confirm", payload);
-      alert("Password has been reset successfully. You can now sign in.");
-      navigate("/login");
+      // POST to trailing-slash endpoint (Django APPEND_SLASH)
+      // Do not send credentials (cookies) for this unauthenticated endpoint to avoid CSRF enforcement issues with corsheaders
+      await api.post("/account/password-reset/confirm/", payload, { withCredentials: false, headers: { 'Content-Type': 'application/json' } });
+      // On success navigate to login with a small success hint
+      navigate("/login", { state: { resetSuccess: true } });
     } catch (err) {
-      console.error("Reset confirm error:", {
-        status: err?.response?.status,
-        data: err?.response?.data,
-        message: err?.message,
-      });
+      // Map server validation errors to form fields when possible
       const errBody = err?.response?.data;
       const status = err?.response?.status;
-      let msg = "Password reset failed.";
-      if (!err?.response) msg = "Can't reach the server. Please check your connection or CORS settings.";
-      else if (status === 400) {
-        if (typeof errBody === "string") msg = errBody;
-        else if (errBody?.detail) msg = String(errBody.detail);
-        else if (errBody?.message) msg = String(errBody.message);
-        else if (errBody?.email) msg = Array.isArray(errBody.email) ? errBody.email[0] : String(errBody.email);
-        else if (errBody?.otp) msg = Array.isArray(errBody.otp) ? errBody.otp[0] : String(errBody.otp);
-        else if (errBody?.new_password) msg = Array.isArray(errBody.new_password) ? errBody.new_password[0] : String(errBody.new_password);
-        else if (errBody?.re_new_password) msg = Array.isArray(errBody.re_new_password) ? errBody.re_new_password[0] : String(errBody.re_new_password);
-      } else if (typeof errBody === "string") msg = errBody;
-      else if (errBody) msg = JSON.stringify(errBody);
-      alert(msg);
+      if (status === 400 && errBody) {
+        const agg = mapServerErrorsToForm(errBody);
+        if (agg) setServerError(agg);
+      } else if (!err?.response) {
+        setServerError("Can't reach the server. Please check your connection or CORS settings.");
+      } else {
+        setServerError(errBody?.detail || errBody?.message || JSON.stringify(errBody));
+      }
     } finally {
       setSubmitting(false);
     }
@@ -86,6 +107,12 @@ export default function ResetPasswordConfirmPage() {
         <p style={{ textAlign: "center", marginBottom: 24, color: "#475569" }}>
           Enter the OTP sent to your email and choose a new password.
         </p>
+
+        {serverError && (
+          <div style={{ marginBottom: 12, padding: 10, background: "#fff4f4", border: "1px solid #ffd7d7", color: "#9b1c1c", borderRadius: 6 }}>
+            {serverError}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <input

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useAuth } from "../../contexts/AuthContext";
@@ -8,65 +8,74 @@ import NameImage from "../../components/nameimage.jpeg";
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { loginRemote } = useAuth();
+  const { loginWithTokens, user, authLoading } = useAuth();
+  const [serverError, setServerError] = useState("");
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
 
+  // If already authenticated, redirect to home
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate("/");
+    }
+  }, [authLoading, user, navigate]);
+
   const onSubmit = async (data) => {
+    setServerError("");
     try {
-      // Build a payload that works for typical backends (DRF SimpleJWT expects `username`,
-      // while your API may use `loginid`). Extra fields are typically ignored server-side.
       const payload = {
         username: data.loginId,
         loginid: data.loginId,
         password: data.password,
       };
-      const res = await api.post("/account/token/", payload);
-      const body = res?.data ?? {};
-      const access = body.access ?? body.token ?? body.access_token;
-      const refresh = body.refresh ?? body.refresh_token;
-      console.log("Login API success:", { status: res.status, body });
 
-      // Treat any 2xx as success
+      // POST to login endpoint that returns tokens in JSON
+      const res = await api.post("/accounts/token/", payload);
+      const body = res?.data ?? {};
+      const access = body.access ?? body.token ?? body.access_token ?? null;
+      const refresh = body.refresh ?? body.refresh_token ?? null;
+
+      console.log("Login API response:", res?.status, body);
+
       if (res.status >= 200 && res.status < 300) {
-        if (access || refresh) {
-          console.log("Login token received:", { access, refresh });
-        } else {
-          console.log("Login successful (tokens may be in HttpOnly cookies). Body:", body);
+        if (access) {
+          loginWithTokens({ access, refresh });
+          navigate("/");
+          return;
         }
-        // Mark user as authenticated in context and navigate
-        loginRemote(data.loginId);
+        // If server didn't return tokens, fall back to reload-style if needed
+        console.warn("Login succeeded but no access token returned");
         navigate("/");
         return;
       }
 
       console.warn("Unexpected login status:", res.status, body);
+      setServerError(`Unexpected status ${res.status}`);
     } catch (err) {
       const errBody = err?.response?.data;
       const status = err?.response?.status;
       console.error("Login API error:", { status, errBody, message: err?.message });
 
-      // Show a more specific message instead of always saying "Invalid credentials"
       let msg = "Login failed.";
       if (!err?.response) {
-        // Network/CORS/connection error
         msg = "Can't reach the server. Please check your connection or CORS settings.";
       } else if (status === 400 || status === 401) {
-        // Likely invalid credentials
         if (typeof errBody === "string") msg = errBody;
         else if (errBody?.detail) msg = String(errBody.detail);
         else if (errBody?.message) msg = String(errBody.message);
-        else msg = "Invalid credentials";
+        else {
+          // aggregate known keys
+          msg = (errBody && typeof errBody === 'object') ? JSON.stringify(errBody) : 'Invalid credentials';
+        }
       } else {
-        // Other server errors
         if (typeof errBody === "string") msg = errBody;
         else if (errBody) msg = JSON.stringify(errBody);
         else if (err?.message) msg = err.message;
       }
-      alert(msg);
+      setServerError(msg);
     }
   };
 
@@ -114,6 +123,8 @@ export default function LoginPage() {
             style={inputStyle}
           />
           {errors.password && <span style={errorStyle}>{errors.password.message}</span>}
+
+          {serverError && <div style={{ color: '#b00020', padding: 8, borderRadius: 6, background: '#fff4f4' }}>{serverError}</div>}
 
           <button type="submit" style={buttonStyle}>SIGN IN</button>
 

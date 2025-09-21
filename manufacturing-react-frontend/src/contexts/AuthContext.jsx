@@ -4,6 +4,29 @@ import api from "../lib/api";
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
+// Minimal JWT parsing helper (no crypto) to read payload
+function parseJwt(token) {
+  try {
+    const parts = token.split('.')
+    if (parts.length < 2) return null
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const json = decodeURIComponent(atob(payload).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    }).join(''))
+    return JSON.parse(json)
+  } catch (e) {
+    return null
+  }
+}
+
+function isTokenExpired(token) {
+  const p = parseJwt(token)
+  if (!p) return true
+  if (!p.exp) return true
+  const now = Math.floor(Date.now() / 1000)
+  return p.exp <= now + 5
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     try {
@@ -14,87 +37,84 @@ export const AuthProvider = ({ children }) => {
     }
   });
   const [authLoading, setAuthLoading] = useState(true);
-  const [users, setUsers] = useState([]); // store registered users (legacy local auth)
 
-  // Bootstrap current user from cookies on app load
+  // Bootstrap: if access token exists and not expired, set Authorization and user
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const endpoints = ['/account/users/', '/account/load-user/', '/account/user/'];
-      let loaded = false;
       try {
-        for (const ep of endpoints) {
-          try {
-            const r = await api.get(ep, { timeout: 2000 });
-            if (r && r.status === 200) {
-              const data = r?.data || {};
-              const loginId = data.loginid || data.loginId || data.username || data.email || null;
-              if (mounted && loginId) {
-                const u = { loginId };
-                setUser(u);
-                try { localStorage.setItem('user', JSON.stringify(u)); } catch {}
-              }
-              loaded = true;
-              break;
-            }
-          } catch (e) {
-            // Continue to next endpoint; ignore individual failures/timeouts
+        const access = localStorage.getItem('access')
+        if (access && !isTokenExpired(access)) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${access}`
+          const payload = parseJwt(access)
+          const loginId = payload?.username || payload?.email || payload?.sub || null
+          if (mounted && loginId) {
+            const u = { loginId }
+            setUser(u)
+            try { localStorage.setItem('user', JSON.stringify(u)) } catch (e) {}
           }
-        }
-        if (!loaded && mounted) {
-          setUser(null);
-          try { localStorage.removeItem('user'); } catch {}
+        } else {
+          // no valid access token
+          setUser(null)
+          try { localStorage.removeItem('access') } catch(e) {}
+          try { localStorage.removeItem('refresh') } catch(e) {}
+          try { localStorage.removeItem('user') } catch(e) {}
+          try { delete api.defaults.headers.common['Authorization'] } catch(e) {}
         }
       } finally {
-        if (mounted) setAuthLoading(false);
+        if (mounted) setAuthLoading(false)
       }
-    })();
-    return () => { mounted = false; };
-  }, []);
+    })()
+    return () => { mounted = false }
+  }, [])
 
-  const signup = (loginId, email, password) => {
-    // Check if loginId or email already exists
-    if (users.some(u => u.loginId === loginId)) {
-      return { success: false, message: "Login ID already exists" };
+  const loginWithTokens = ({ access, refresh }) => {
+    try { localStorage.setItem('access', access) } catch (e) {}
+    try { localStorage.setItem('refresh', refresh) } catch (e) {}
+    try { api.defaults.headers.common['Authorization'] = `Bearer ${access}` } catch (e) {}
+    const payload = parseJwt(access)
+    const loginId = payload?.username || payload?.email || payload?.sub || null
+    if (loginId) {
+      const u = { loginId }
+      setUser(u)
+      try { localStorage.setItem('user', JSON.stringify(u)) } catch (e) {}
     }
-    if (users.some(u => u.email === email)) {
-      return { success: false, message: "Email already exists" };
+  }
+
+  const reloadUser = async () => {
+    // With token-based flow we can derive user from the access token
+    const access = localStorage.getItem('access')
+    if (access && !isTokenExpired(access)) {
+      const payload = parseJwt(access)
+      const loginId = payload?.username || payload?.email || payload?.sub || null
+      if (loginId) {
+        const u = { loginId }
+        setUser(u)
+        try { localStorage.setItem('user', JSON.stringify(u)) } catch (e) {}
+        return u
+      }
     }
-
-    // Add new user
-    setUsers([...users, { loginId, email, password }]);
-    return { success: true };
-  };
-
-  const login = (loginId, password) => {
-    const existingUser = users.find(u => u.loginId === loginId && u.password === password);
-    if (existingUser) {
-      setUser({ loginId: existingUser.loginId });
-      return { success: true };
-    }
-    return { success: false, message: "Invalid credentials" };
-  };
-
-  const loginRemote = (loginId) => {
-    const u = { loginId };
-    setUser(u);
-    try { localStorage.setItem('user', JSON.stringify(u)); } catch {}
-    return { success: true };
-  };
+    setUser(null)
+    return null
+  }
 
   const logout = async () => {
     try {
-      await api.post('/account/logout/');
+      // notify backend to invalidate tokens if endpoint exists
+      await api.post('/account/logout/', {}, { withCredentials: false })
     } catch (e) {
-      // swallow, still clear client state
+      // ignore server errors
     }
-    setUser(null);
-    try { localStorage.removeItem('user'); } catch {}
-  };
+    setUser(null)
+    try { localStorage.removeItem('user') } catch (e) {}
+    try { localStorage.removeItem('access') } catch (e) {}
+    try { localStorage.removeItem('refresh') } catch (e) {}
+    try { delete api.defaults.headers.common['Authorization'] } catch (e) {}
+  }
 
   return (
-    <AuthContext.Provider value={{ user, authLoading, login, loginRemote, logout, signup }}>
+    <AuthContext.Provider value={{ user, authLoading, loginWithTokens, reloadUser, logout }}>
       {children}
     </AuthContext.Provider>
-  );
-};
+  )
+}

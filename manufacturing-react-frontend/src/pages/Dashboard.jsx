@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { styles } from "../DashboardStyles";
 import BillsOfMaterialsPage from "./BillsOfMaterialsPage";
 import StockLedgerPage from "./StockLedgerPage";
+import AnalyticsOverview from "./AnalyticsOverview";
 import { useNavigate, useLocation } from "react-router-dom";
 import Logo from "../components/Logo.png";
 import Logo1 from "../components/Logo1.png";
@@ -22,6 +23,7 @@ const menuItems = [
   { key: "dashboard", label: "Dashboard", to: "/" },
   { key: "boms", label: "Bills of Materials", to: "/boms" },
   { key: "stockledger", label: "Stock Ledger", to: "/stockledger" },
+  { key: "analytics", label: "Analytics", to: "/analytics" },
 ];
 
 const allStates = [
@@ -71,6 +73,7 @@ export default function DashboardPage() {
     const path = location.pathname || "/";
     if (path.startsWith("/boms")) setView("boms");
     else if (path.startsWith("/stockledger")) setView("stockledger");
+    else if (path.startsWith("/analytics")) setView("analytics");
     else setView("dashboard");
   }, [location.pathname]);
 
@@ -122,6 +125,7 @@ export default function DashboardPage() {
 
   if (view === "boms") return <BillsOfMaterialsPage onBack={() => navigate("/")} />;
   if (view === "stockledger") return <StockLedgerPage onBack={() => navigate("/")} />;
+  if (view === "analytics") return <AnalyticsOverview />;
 
   return (
     <div style={styles.pageContainer}>

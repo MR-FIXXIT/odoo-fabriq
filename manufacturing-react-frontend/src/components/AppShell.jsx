@@ -20,6 +20,7 @@ export default function AppShell({ children }){
           <NavItem to="/workorders" label="Work Orders" />
           <NavItem to="/boms" label="Bills of Materials" />
           <NavItem to="/stock" label="Stock Ledger" />
+          <NavItem to="/analytics" label="Analytics" />
         </nav>
         <div className="mt-6">
           <button onClick={logout} className="text-sm text-red-600">Logout</button>
