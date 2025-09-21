@@ -1,3 +1,11 @@
+#Demo Video
+https://drive.google.com/drive/folders/152ClGcH6XHNA40fqyk6eESE8FZZ_tMAK?usp=sharing
+
+<video width="640" height="360" controls>
+  <source src="path/to/your/video.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
 # Fabriq ERP: A Modular Manufacturing Management Web Application
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
