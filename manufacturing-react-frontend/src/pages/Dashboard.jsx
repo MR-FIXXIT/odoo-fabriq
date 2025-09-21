@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { styles } from "../DashboardStyles";
 import BillsOfMaterialsPage from "./BillsOfMaterialsPage";
 import StockLedgerPage from "./StockLedgerPage";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import Logo from "../components/Logo.png";
+import Logo1 from "../components/Logo1.png";
 
 // Sidebar style objects
 const sidebarStyles = {
@@ -17,9 +19,9 @@ const sidebarStyles = {
 };
 
 const menuItems = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "boms", label: "Bills of Materials" },
-  { key: "stockledger", label: "Stock Ledger" },
+  { key: "dashboard", label: "Dashboard", to: "/" },
+  { key: "boms", label: "Bills of Materials", to: "/boms" },
+  { key: "stockledger", label: "Stock Ledger", to: "/stockledger" },
 ];
 
 const allStates = [
@@ -34,6 +36,7 @@ const allStates = [
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const profileRef = useRef();
 
   const [view, setView] = useState("dashboard");
@@ -62,6 +65,14 @@ export default function DashboardPage() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  // Sync view with the current route
+  useEffect(() => {
+    const path = location.pathname || "/";
+    if (path.startsWith("/boms")) setView("boms");
+    else if (path.startsWith("/stockledger")) setView("stockledger");
+    else setView("dashboard");
+  }, [location.pathname]);
 
   const saveOrders = (updated) => { setOrders(updated); localStorage.setItem("orders", JSON.stringify(updated)); };
   const saveWorkCenters = (updated) => { setWorkCenters(updated); localStorage.setItem("workCenters", JSON.stringify(updated)); };
@@ -109,8 +120,8 @@ export default function DashboardPage() {
     ? filteredOrders
     : filteredOrders.filter(o => o.state === selectedState);
 
-  if (view === "boms") return <BillsOfMaterialsPage onBack={() => setView("dashboard")} />;
-  if (view === "stockledger") return <StockLedgerPage onBack={() => setView("dashboard")} />;
+  if (view === "boms") return <BillsOfMaterialsPage onBack={() => navigate("/")} />;
+  if (view === "stockledger") return <StockLedgerPage onBack={() => navigate("/")} />;
 
   return (
     <div style={styles.pageContainer}>
@@ -125,7 +136,7 @@ export default function DashboardPage() {
             <li key={menu.key}>
               <button
                 style={{ ...sidebarStyles.sidebarItem, ...(view === menu.key ? sidebarStyles.sidebarItemActive : {}) }}
-                onClick={() => { setSidebarOpen(false); setView(menu.key); }}
+                onClick={() => { setSidebarOpen(false); setView(menu.key); navigate(menu.to); }}
               >
                 {menu.label}
               </button>
@@ -139,12 +150,12 @@ export default function DashboardPage() {
           <button style={burgerButton} onClick={() => setSidebarOpen(true)}>☰</button>
         </div>
         <div style={headerCenter}>
-          <img src="src/components/Logo.png" alt="Logo" style={{ height: 40, marginRight: 12 }} />
+          <img src={Logo} alt="Logo" style={{ height: 40, marginRight: 12 }} />
           <span style={appTitle}>Fabriq</span>
         </div>
         <div style={headerRight} ref={profileRef}>
           <button onClick={() => setProfileOpen((v) => !v)} style={{ border: "none", background: "none", cursor: "pointer" }}>
-            <img src="src/components/Logo1.png" alt="User" style={{ width: 40, height: 40, borderRadius: "50%" }} />
+            <img src={Logo1} alt="User" style={{ width: 40, height: 40, borderRadius: "50%" }} />
           </button>
           {profileOpen && (
             <div style={profileSidebarStyles.sidebar}>
@@ -301,8 +312,7 @@ const burgerButton = { background: "none", border: "none", fontSize: 26, marginR
 const headerCenter = { flex: "1 1 auto", display: "flex", alignItems: "center", justifyContent: "center" };
 const appTitle = { fontWeight: 700, fontSize: 22, color: "#183153", letterSpacing: 0.5 };
 const headerRight = { flex: "0 0 auto", display: "flex", alignItems: "center", position: "relative" };
-const userChip = { marginLeft: 10, fontSize: 16, fontWeight: 500, color: "#34495e", borderRadius: 20, background: "#f2f5fa", padding: "8px 18px" };
-const profileSidebarStyles = { 
+const profileSidebarStyles = {
   sidebar: { position: "absolute", right: 0, top: 50, width: 120, background: "#fff", border: "1px solid #eaeaea", borderRadius: 8, padding: 8, zIndex: 1600, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }, 
   closeBtn: { position: "absolute", top: 4, right: 6, background: "none", border: "none", fontSize: 18, cursor: "pointer" }, 
   list: { listStyle: "none", padding: 0, margin: 0 }, 
